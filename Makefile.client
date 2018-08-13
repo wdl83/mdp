@@ -1,0 +1,10 @@
+include Makefile.defs
+
+TARGET = client
+
+SRCS = \
+	Client.cpp \
+	ZMQClientContext.cpp \
+	ZMQIdentity.cpp
+
+include Makefile.rules

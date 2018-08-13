@@ -1,0 +1,15 @@
+OBJS = $(SRCS:.cpp=.o) 
+
+TARGETS = $(TARGET).elf
+all:: $(TARGETS)
+
+%.elf: $(OBJS)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+#.PRECIOUS: %.o
+
+%.o: %.cpp %.h
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+clean: $(TARGETS)
+	rm  *.o *.elf

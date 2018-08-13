@@ -1,0 +1,11 @@
+include Makefile.defs
+
+TARGET = broker
+
+SRCS = \
+	Broker.cpp \
+	MutualHeartbeatMonitor.cpp \
+	ZMQBrokerContext.cpp \
+	ZMQIdentity.cpp
+
+include Makefile.rules
