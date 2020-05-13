@@ -1,12 +1,13 @@
 include Makefile.defs
 
-TARGET = worker
+TARGET = echo_worker
 
 CXXSRCS = \
 	MutualHeartbeatMonitor.cpp \
 	Worker.cpp \
 	WorkerTask.cpp \
 	ZMQIdentity.cpp \
-	ZMQWorkerContext.cpp
+	ZMQWorkerContext.cpp \
+	echo_worker.cpp
 
 include Makefile.rules
