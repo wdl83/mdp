@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <exception>
 #include <string>
 
@@ -54,7 +55,7 @@ struct Exception: public EnsureException, public BaseException
 {
     Exception(DbgInfo info, const char *msg):
         EnsureException{info},
-        BaseException{EnsureException::toString() + ' ' + msg + '\n'}
+        BaseException{EnsureException::toString() + ' ' + msg}
     {}
 };
 
@@ -76,3 +77,14 @@ struct Exception: public EnsureException, public BaseException
     } while(false)
 
 #define ASSERT(cond) assert(cond)
+
+using RuntimeError = Exception<std::runtime_error>;
+
+struct ReportCErrNo : public std::runtime_error
+{
+    ReportCErrNo(const std::string &msg):
+        std::runtime_error{std::string{strerror(errno)} + " at " + msg}
+    {}
+};
+
+using CRuntimeError = Exception<ReportCErrNo>;

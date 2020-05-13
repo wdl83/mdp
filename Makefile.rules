@@ -1,15 +1,19 @@
-OBJS = $(SRCS:.cpp=.o) 
+COBJS = $(CSRCS:.c=.o) 
+CXXOBJS = $(CXXSRCS:.cpp=.o) 
 
 TARGETS = $(TARGET).elf
 all:: $(TARGETS)
 
-%.elf: $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^
+%.elf: $(COBJS) $(CXXOBJS)
+	$(CC) $^ $(LDFLAGS) -o $@
 
 #.PRECIOUS: %.o
 
-%.o: %.cpp %.h
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
+%.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
+
+%.o: %.cpp
+	$(CC) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $<
 
 clean: $(TARGETS)
 	rm  *.o *.elf

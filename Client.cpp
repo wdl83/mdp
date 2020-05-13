@@ -1,8 +1,14 @@
 #include "Client.h"
 #include "Except.h"
 
+#include <fstream>
+
 #include <unistd.h>
 
+#include <nlohmann/json.hpp>
+
+
+using json = nlohmann::json;
 
 auto Client::exec(
     const std::string &address,
@@ -79,7 +85,7 @@ int main(int argc, char *const argv[])
 {
     std::string address;
     std::string serviceName;
-    std::string payloadRawStr;
+    std::string payloadName;
 
     for(char c; -1 != (c = ::getopt(argc, argv, "ha:s:p:"));)
     {
@@ -96,7 +102,7 @@ int main(int argc, char *const argv[])
                 serviceName = optarg;
                 break;
             case 'p':
-                payloadRawStr = optarg;
+                payloadName = optarg;
                 break;
             case ':':
             case '?':
@@ -106,7 +112,7 @@ int main(int argc, char *const argv[])
         }
     }
 
-    if(address.empty() || serviceName.empty() || payloadRawStr.empty())
+    if(address.empty() || serviceName.empty() || payloadName.empty())
     {
         help();
         return EXIT_FAILURE;
@@ -114,9 +120,18 @@ int main(int argc, char *const argv[])
 
     try
     {
+        std::ifstream payloadFile{payloadName};
+        Client::PayloadSeq payloadSeq;
+
+        for(auto i : json::parse(payloadFile))
+        {
+            std::cout << "\t" << i.dump() << std::endl;
+            payloadSeq.emplace_back(i.dump());
+        }
+
         Client client;
 
-        const auto reply = client.exec(address, serviceName, {payloadRawStr});
+        const auto reply = client.exec(address, serviceName, std::move(payloadSeq));
 
         for(const auto &i : reply) std::cout << i;
         std::cout << std::endl;

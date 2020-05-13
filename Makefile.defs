@@ -1,10 +1,9 @@
-CXX=clang
-LD=clang
+CC=clang
 
-# -fsanitize=address
-# -DENABLE_TRACE
-CXXFLAGS = \
-	-std=c++14 \
+FLAGS = \
+	-DENABLE_TRACE \
+	-DHOST \
+	-Os \
 	-Wall \
 	-Wextra \
 	-Wno-parentheses \
@@ -12,16 +11,18 @@ CXXFLAGS = \
 	-Wno-unused-variable \
 	-Wshadow \
 	-Wunreachable-code \
+	-fomit-frame-pointer \
 	-g \
-	-O2 \
-	-fno-omit-frame-pointer \
-	-I . \
-	-I zmqpp-root/include
+	-I ../zmqpp-root/include
 
+CXXFLAGS = \
+	$(FLAGS) \
+	-fsanitize=address \
+	-std=c++14
 
-# -fsanitize=address
 LDFLAGS = \
-	-L zmqpp-root/lib \
+	-L ../zmqpp-root/lib \
+	-fsanitize=address \
 	-lpthread \
 	-lstdc++ \
 	-lzmq \

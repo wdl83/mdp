@@ -2,7 +2,7 @@ include Makefile.defs
 
 TARGET = worker
 
-SRCS = \
+CXXSRCS = \
 	MutualHeartbeatMonitor.cpp \
 	Worker.cpp \
 	WorkerTask.cpp \
