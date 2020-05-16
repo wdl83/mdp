@@ -3,17 +3,15 @@ CC=clang
 FLAGS = \
 	-DENABLE_TRACE \
 	-DHOST \
+	-I ../zmqpp-root/include \
 	-Os \
 	-Wall \
 	-Wextra \
 	-Wno-parentheses \
-	-Wno-unused-parameter \
-	-Wno-unused-variable \
 	-Wshadow \
 	-Wunreachable-code \
 	-fomit-frame-pointer \
-	-g \
-	-I ../zmqpp-root/include
+	-g
 
 CXXFLAGS = \
 	$(FLAGS) \

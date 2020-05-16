@@ -71,6 +71,7 @@ void Broker::onMessage(MessageHandle handle)
     }
     catch(const EnsureException &except)
     {
+        TRACE(this, ' ', except.invariant);
         dispatch(Tagged<Tag::Unsupported>{std::move(handle)});
         return;
     }

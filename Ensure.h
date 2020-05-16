@@ -42,9 +42,11 @@ std::string toString(DbgInfo dbgInfo)
 struct EnsureException
 {
     DbgInfo dbgInfo;
+    const char *invariant;
 
-    EnsureException(DbgInfo info):
-        dbgInfo{info}
+    EnsureException(DbgInfo info, const char *msg):
+        dbgInfo{info},
+        invariant{msg}
     {}
 
     std::string toString() const {return ::toString(dbgInfo);}
@@ -54,7 +56,7 @@ template <typename BaseException>
 struct Exception: public EnsureException, public BaseException
 {
     Exception(DbgInfo info, const char *msg):
-        EnsureException{info},
+        EnsureException{info, msg},
         BaseException{EnsureException::toString() + ' ' + msg}
     {}
 };

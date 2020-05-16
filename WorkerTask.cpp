@@ -71,14 +71,17 @@ void WorkerTask::operator()(zmqpp::socket &socket)
         catch(const EnsureException &except)
         {
             TRACE(this, " EnsureException: ", except.toString(), " restarting");
+            return;
         }
         catch(const std::exception &except)
         {
             TRACE(this, " std::exception: ", except.what(), " restarting");
+            return;
         }
         catch(...)
         {
             TRACE(this, " Unsupported exception, restarting");
+            return;
         }
     }
 }
