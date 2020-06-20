@@ -1,8 +1,17 @@
 #pragma once
 
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+enum class TraceLevel
+{
+    Error,
+    Warning,
+    Info,
+    Debug
+};
 
 namespace impl_ {
 
@@ -23,11 +32,24 @@ void traceImpl(std::ostream &os, const T &value, const T_n &...tail)
     traceImpl(os, tail...);
 }
 
+inline
+TraceLevel currTraceLevel()
+{
+    static const TraceLevel traceLevel =
+        ::getenv("TRACE_LEVEL")
+        ? static_cast<TraceLevel>(::atoi(::getenv("TRACE_LEVEL")))
+        : TraceLevel::Info;
+    return traceLevel;
+}
+
 } /* impl_ */
 
+
 template <typename ...T_n>
-void trace(const T_n &...tail)
+void trace(TraceLevel traceLevel, const T_n &...tail)
 {
+    if(int(impl_::currTraceLevel()) < int(traceLevel)) return;
+
     std::stringstream ss;
 
     impl_::traceImpl(ss, tail...);
@@ -41,10 +63,10 @@ void trace(const T_n &...tail)
 
 #else
 
-#define TRACE(...) \
+#define TRACE(traceLevel, ...) \
     do \
     { \
-        trace(__FILE__, ':', __LINE__, ' ', __PRETTY_FUNCTION__, ' ', __VA_ARGS__); \
+        trace(traceLevel, __FILE__, ':', __LINE__, ' ', __PRETTY_FUNCTION__, ' ', __VA_ARGS__); \
     } while(false)
 
 #endif /* ENABLE_TRACE */

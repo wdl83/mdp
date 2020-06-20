@@ -52,7 +52,6 @@ int main(int argc, char *const argv[])
             [](zmqpp::message message)
             {
                 /* echo */
-                message.push_back("+worker");
                 return message;
             });
     }

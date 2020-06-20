@@ -11,29 +11,51 @@
 struct BrokerTasks
 {
     using WorkerIterator = WorkerPool::WorkerSeq::iterator;
-    using TaskMap = std::map<ZMQIdentity, WorkerIterator>;
+
+    struct TaskInfo
+    {
+        WorkerIterator workerIterator_;
+        ZMQIdentity clientIdentity_;
+
+        TaskInfo(WorkerIterator workerIterator, ZMQIdentity clientIdentity):
+            workerIterator_{workerIterator},
+            clientIdentity_{clientIdentity}
+        {}
+
+        TaskInfo(const TaskInfo &) = delete;
+        TaskInfo &operator= (const TaskInfo &) = delete;
+
+        TaskInfo(TaskInfo &&) = default;
+        TaskInfo &operator= (TaskInfo &&) = default;
+    };
+
+    using TaskInfoMap = std::map<ZMQIdentity, TaskInfo>;
 private:
-    TaskMap taskMap_;
+    TaskInfoMap taskInfoMap_;
 public:
     bool valid(const ZMQIdentity &identity) const
     {
-        return 0 < taskMap_.count(identity);
+        return taskInfoMap_.count(identity);
     }
 
-    void append(WorkerIterator iterator)
+    void append(WorkerIterator workerIterator, ZMQIdentity clientIdentity)
     {
-        ENSURE(0 == taskMap_.count(iterator->identity_), WorkerDuplicate);
-        taskMap_[iterator->identity_] = iterator;
+        ENSURE(0 == taskInfoMap_.count(workerIterator->identity_), WorkerDuplicate);
+
+        taskInfoMap_.emplace(
+            std::make_pair(
+                workerIterator->identity_,
+                TaskInfo{workerIterator, clientIdentity}));
     }
 
-    void remove(const ZMQIdentity &identity)
+    void remove(const ZMQIdentity &workerIdentity)
     {
-        taskMap_.erase(identity);
+        taskInfoMap_.erase(workerIdentity);
     }
 
-    WorkerIterator workerIterator(const ZMQIdentity &identity) const
+    const TaskInfo &taskInfo(const ZMQIdentity &workerIdentity) const
     {
-        ENSURE(valid(identity), IdentityInvalid);
-        return taskMap_.at(identity);
+        ENSURE(valid(workerIdentity), IdentityInvalid);
+        return taskInfoMap_.at(workerIdentity);
     }
 };

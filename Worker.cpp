@@ -4,6 +4,23 @@
 
 #include <future>
 
+namespace {
+
+struct Guard
+{
+    zmqpp::socket &socket_;
+
+    Guard(zmqpp::socket &socket): socket_{socket}
+    {}
+
+    ~Guard()
+    {
+        TRACE(TraceLevel::Info, this, " disconnecting");
+        send(socket_, MDP::Worker::makeDisconnect(), IOMode::Blocking);
+    }
+};
+
+} /* namespace */
 
 constexpr
 std::chrono::milliseconds Worker::timeout;
@@ -19,9 +36,12 @@ void Worker::exec(
         {
             monitor_.reset();
 
-            TRACE(this, " service ", serviceName, " broker ", address);
+            TRACE(TraceLevel::Debug, this, " service ", serviceName, " broker ", address);
 
             auto zmqContext = ZMQContext{ZMQIdentity::unique(), address};
+
+            /* in case of worker crash - send disconnect to broker */
+            Guard guard{zmqContext.socket_};
 
             auto r =
                 std::async(
@@ -31,51 +51,34 @@ void Worker::exec(
                         WorkerTask{transform}(zmqContext.slaveSocket_);
                     });
 
-            WorkerTask::Guard rGuard{zmqContext.masterSocket_};
+            WorkerTask::MasterGuard masterGuard{zmqContext.masterSocket_};
 
             exec(zmqContext, serviceName);
-        }
-        catch(const EnsureException &except)
-        {
-            TRACE(this, " EnsureException: ", except.toString(), " restarting");
+            /* if worker thread throws exception it will be propagated on get() */
+            r.get();
         }
         catch(const std::exception &except)
         {
-            TRACE(this, " std::exception: ", except.what(), " restarting");
+            TRACE(TraceLevel::Error, this, " ", except.what(), " restarting");
         }
         catch(...)
         {
-            TRACE(this, " Unsupported exception, restarting");
+            TRACE(TraceLevel::Error, this, " Unsupported exception, restarting");
         }
     }
 }
 
 void Worker::exec(ZMQContext &zmqContext, const std::string &serviceName)
 {
-    try
-    {
-        registerService(zmqContext, serviceName);
-        provideService(zmqContext, serviceName);
-    }
-    catch(const EnsureException &except)
-    {
-        TRACE(this, " EnsureException: ", except.toString(), " restarting");
-    }
-    catch(const std::exception &except)
-    {
-        TRACE(this, " std::exception: ", except.what(), " restarting");
-    }
-    catch(...)
-    {
-        TRACE(this, " Unsupported exception, restarting");
-    }
+    registerService(zmqContext, serviceName);
+    provideService(zmqContext, serviceName);
 }
 
 void Worker::registerService(ZMQContext &zmqContext, const std::string &serviceName)
 {
     auto ready = MDP::Worker::makeReady(serviceName);
 
-    TRACE(this, " ", serviceName, " ", ready);
+    TRACE(TraceLevel::Debug, this, " ", serviceName, " ", ready);
 
     send(zmqContext.socket_, std::move(ready), IOMode::Blocking);
     monitor_.selfHeartbeat();
@@ -83,11 +86,11 @@ void Worker::registerService(ZMQContext &zmqContext, const std::string &serviceN
 
 void Worker::provideService(ZMQContext &zmqContext, const std::string &serviceName)
 {
-    TRACE(this, " ", serviceName);
+    TRACE(TraceLevel::Debug, this, " ", serviceName);
 
     for(uint64_t cntr = 0;; ++cntr)
     {
-       // TRACE(this, " [", cntr, "] waiting");
+        TRACE(TraceLevel::Debug, this, " [", cntr, "] waiting");
 
         if(zmqContext.poller_.poll(timeout.count()))
         {
@@ -101,6 +104,7 @@ void Worker::provideService(ZMQContext &zmqContext, const std::string &serviceNa
             {
                 auto handle = recv(zmqContext.masterSocket_, IOMode::NonBlockig);
 
+                if(handle && 1 == handle->parts() && "exited" == handle->get(0)) break;
                 if(handle) onTaskMessage(zmqContext, std::move(handle));
             }
             else
@@ -161,7 +165,7 @@ void Worker::onMessage(ZMQContext &zmqContext, MessageHandle handle)
 void Worker::onTaskMessage(ZMQContext &zmqContext, MessageHandle handle)
 {
     ASSERT(handle);
-    TRACE(this, " ", handle);
+    TRACE(TraceLevel::Debug, this, " ", handle);
     dispatch(zmqContext, Tagged<Tag::ClientResponse>{std::move(handle)});
 }
 
@@ -184,7 +188,7 @@ void Worker::sendHeartbeatIfNeeded(ZMQContext &zmqContext)
 void Worker::dispatch(ZMQContext &zmqContext, Tagged<Tag::ClientRequest> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(this, " ", tagged.handle);
+    TRACE(TraceLevel::Debug, this, " ", tagged.handle);
     /* every valid message received is treated as peers heartbeat */
     monitor_.peerHeartbeat();
     send(zmqContext.masterSocket_, std::move(*tagged.handle), IOMode::Blocking);
@@ -193,14 +197,14 @@ void Worker::dispatch(ZMQContext &zmqContext, Tagged<Tag::ClientRequest> tagged)
 void Worker::dispatch(ZMQContext &zmqContext, Tagged<Tag::ClientResponse> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(this, " ", tagged.handle);
+    TRACE(TraceLevel::Debug, this, " ", tagged.handle);
     send(zmqContext.socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
 void Worker::dispatch(ZMQContext &, Tagged<Tag::BrokerHeartbeat> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(this, " ", monitor_);
+    TRACE(TraceLevel::Debug, this, " ", monitor_);
     monitor_.peerHeartbeat();
 }
 
@@ -213,5 +217,5 @@ void Worker::dispatch(ZMQContext &, Tagged<Tag::BrokerDisconnect> tagged)
 void Worker::dispatch(ZMQContext &, Tagged<Tag::Unsupported> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(this, " unsupported message discarded ", tagged.handle);
+    TRACE(TraceLevel::Warning, this, " unsupported message discarded ", tagged.handle);
 }

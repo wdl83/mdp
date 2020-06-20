@@ -12,7 +12,18 @@ struct WorkerTask
         zmqpp::socket &socket_;
         Guard(zmqpp::socket &socket): socket_{socket}
         {}
-        ~Guard();
+    };
+
+    struct MasterGuard: public Guard
+    {
+        using Guard::Guard;
+        ~MasterGuard();
+    };
+
+    struct SlaveGuard: public Guard
+    {
+        using Guard::Guard;
+        ~SlaveGuard();
     };
 
     using Transform = std::function<zmqpp::message (zmqpp::message)>;

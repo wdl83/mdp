@@ -5,6 +5,7 @@ TARGET = client
 CXXSRCS = \
 	Client.cpp \
 	ZMQClientContext.cpp \
-	ZMQIdentity.cpp
+	ZMQIdentity.cpp \
+	client.cpp
 
 include Makefile.rules

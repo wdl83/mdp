@@ -39,17 +39,13 @@ void Broker::exec(const std::string &address)
                 }
             }
         }
-        catch(const EnsureException &except)
-        {
-            TRACE(this, " EnsureException: ", except.toString(), " restarting");
-        }
         catch(const std::exception &except)
         {
-            TRACE(this, " std::exception: ", except.what(), " restarting");
+            TRACE(TraceLevel::Error, this, " ", except.what(), " restarting");
         }
         catch(...)
         {
-            TRACE(this, " Unsupported exception, restarting");
+            TRACE(TraceLevel::Error, this, " unsupported exception, restarting");
         }
     }
 }
@@ -71,7 +67,7 @@ void Broker::onMessage(MessageHandle handle)
     }
     catch(const EnsureException &except)
     {
-        TRACE(this, ' ', except.invariant);
+        TRACE(TraceLevel::Warning, this, ' ', except.invariant);
         dispatch(Tagged<Tag::Unsupported>{std::move(handle)});
         return;
     }
@@ -93,7 +89,7 @@ void Broker::onMessage(MessageHandle handle)
 void Broker::onClientMessage(MessageHandle handle)
 {
     ASSERT(handle);
-    TRACE(this, " ", handle);
+    TRACE(TraceLevel::Debug, this, " ", handle);
 
     dispatch(Tagged<Tag::ClientRequest>(std::move(handle)));
 }
@@ -130,13 +126,13 @@ void Broker::onWorkerMessage(MessageHandle handle)
 
 void Broker::dispatch(Tagged<Tag::ClientReply> tagged)
 {
-    TRACE(this, ' ', tagged.handle);
+    TRACE(TraceLevel::Debug, this, ' ', tagged.handle);
     send(zmqContextHandle_->socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
 void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
 {
-    TRACE(this, tagged.handle);
+    TRACE(TraceLevel::Debug, this, tagged.handle);
     ASSERT(3 <= tagged.handle->parts());
 
     using namespace MDP::Broker;
@@ -147,7 +143,7 @@ void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
     {
         dispatch(
             Tagged<Tag::ClientReply>(
-                makeClientRep(clientIdentity, "", Signature::serviceUndefined)));
+                makeFailureClientRep(clientIdentity, "", Signature::serviceUndefined)));
         return;
     }
 
@@ -157,7 +153,7 @@ void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
     {
         dispatch(
             Tagged<Tag::ClientReply>(
-                makeClientRep(clientIdentity, serviceName, Signature::serviceUnsupported)));
+                makeFailureClientRep(clientIdentity, serviceName, Signature::serviceUnsupported)));
         return;
     }
 
@@ -167,7 +163,7 @@ void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
     {
         dispatch(
             Tagged<Tag::ClientReply>(
-                makeClientRep(clientIdentity, serviceName, Signature::serviceBusy)));
+                makeFailureClientRep(clientIdentity, serviceName, Signature::serviceBusy)));
         return;
     }
 
@@ -179,7 +175,7 @@ void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
         MDP::append(request, tagged.handle->get(i));
     }
 
-    dispatch(Tagged<Tag::WorkerRequest>((std::move(request))), *worker);
+    dispatch(Tagged<Tag::WorkerRequest>((std::move(request))), *worker, clientIdentity);
 }
 
 void Broker::dispatch(Tagged<Tag::WorkerReady> tagged)
@@ -190,18 +186,21 @@ void Broker::dispatch(Tagged<Tag::WorkerReady> tagged)
     auto workerIdentity = ZMQIdentity{tagged.handle->get(0)};
     const auto serviceName = tagged.handle->get(4);
 
-    TRACE(this, " ", workerIdentity.asString(), " ", serviceName,  " ready");
+    TRACE(TraceLevel::Info, this, " ", workerIdentity.asString(), " ", serviceName,  " ready");
 
     workerPool_.append(serviceName, workerIdentity);
 }
 
-void Broker::dispatch(Tagged<Tag::WorkerRequest> tagged, WorkerPool::Worker &worker)
+void Broker::dispatch(
+    Tagged<Tag::WorkerRequest> tagged,
+    WorkerPool::Worker &worker,
+    ZMQIdentity clientIdentity)
 {
-    TRACE(this, ' ', tagged.handle);
+    TRACE(TraceLevel::Debug, this, ' ', tagged.handle);
 
     worker.state_ = WorkerPool::Worker::State::Busy;
     worker.monitor_.selfHeartbeat();
-    brokerTasks_.append(workerPool_.findWorker(worker.identity_));
+    brokerTasks_.append(workerPool_.findWorker(worker.identity_), clientIdentity);
     send(zmqContextHandle_->socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
@@ -212,9 +211,11 @@ void Broker::dispatch(Tagged<Tag::WorkerReply> tagged)
 
     const auto workerIdentity = ZMQIdentity{tagged.handle->get(0)};
     const auto clientIdentity = ZMQIdentity{tagged.handle->get(4)};
-    const auto workerIterator = brokerTasks_.workerIterator(workerIdentity);
+    const auto &taskInfo = brokerTasks_.taskInfo(workerIdentity);
+    const auto workerIterator = taskInfo.workerIterator_;
 
     TRACE(
+        TraceLevel::Debug,
         this,
         " work ", workerIdentity.asString(),
         " serviceName ", workerIterator->serviceName_ ,
@@ -222,7 +223,7 @@ void Broker::dispatch(Tagged<Tag::WorkerReply> tagged)
         " reply");
 
     auto reply =
-        MDP::Broker::makeClientRep(
+        MDP::Broker::makeSucessClientRep(
             clientIdentity,
             workerIterator->serviceName_);
 
@@ -248,6 +249,7 @@ void Broker::dispatch(Tagged<Tag::WorkerHeartbeat> tagged)
     const auto workerIterator = workerPool_.findWorker(workerIdentity);
 
     TRACE(
+        TraceLevel::Debug,
         this,
         " ", workerIdentity.asString(),
         " ", workerIterator->serviceName_ ,
@@ -267,13 +269,25 @@ void Broker::dispatch(Tagged<Tag::WorkerDisconnect> tagged)
     const auto workerIterator = workerPool_.findWorker(workerIdentity);
 
     TRACE(
+        TraceLevel::Info,
         this,
         " ", workerIdentity.asString(),
         " ", workerIterator->serviceName_ ,
         " ", workerIterator->state_,
         " disconnected");
 
-    brokerTasks_.remove(workerIdentity);
+    if(brokerTasks_.valid(workerIdentity))
+    {
+        const auto &taskInfo = brokerTasks_.taskInfo(workerIdentity);
+
+        dispatch(
+            Tagged<Tag::ClientReply>(
+                MDP::Broker::makeFailureClientRep(
+                    taskInfo.clientIdentity_,
+                    workerIterator->serviceName_,
+                    MDP::Broker::Signature::serviceFailure)));
+        brokerTasks_.remove(workerIdentity);
+    }
     workerPool_.remove(workerIdentity);
 }
 
@@ -287,6 +301,7 @@ void Broker::onTimeout()
             if(worker.monitor_.peerHeartbeatExpired())
             {
                 TRACE(
+                    TraceLevel::Info,
                     this,
                     " ", worker.identity_.asString(),
                     " ", worker.serviceName_,
@@ -304,8 +319,22 @@ void Broker::onTimeout()
 
     for(const auto &identity : expired)
     {
-        TRACE(this, " puring ", identity.asString());
-        brokerTasks_.remove(identity);
+        TRACE(TraceLevel::Debug, this, " puring ", identity.asString());
+
+        const auto iterator = workerPool_.findWorker(identity);
+
+        if(brokerTasks_.valid(identity))
+        {
+            const auto &taskInfo = brokerTasks_.taskInfo(identity);
+
+            dispatch(
+                Tagged<Tag::ClientReply>(
+                    MDP::Broker::makeFailureClientRep(
+                        taskInfo.clientIdentity_,
+                        iterator->serviceName_,
+                        MDP::Broker::Signature::serviceFailure)));
+            brokerTasks_.remove(identity);
+        }
         workerPool_.remove(identity);
     }
 
@@ -331,7 +360,7 @@ void Broker::sendHeartbeatIfNeeded()
 void Broker::dispatch(Tagged<Tag::Unsupported> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(this, " unsupported message discarded ", tagged.handle);
+    TRACE(TraceLevel::Warning, this, " unsupported message discarded ", tagged.handle);
 }
 
 
@@ -377,19 +406,14 @@ int main(int argc, char *const argv[])
 
         broker.exec(address);
     }
-    catch(const EnsureException &except)
-    {
-        std::cerr << "ensure exception " << except.toString() << std::endl;
-        return EXIT_FAILURE;
-    }
     catch(const std::exception &except)
     {
-        std::cerr << "std exception " << except.what() << std::endl;
+        TRACE(TraceLevel::Error, " ", except.what());
         return EXIT_FAILURE;
     }
     catch(...)
     {
-        std::cerr << "unsupported exception" << std::endl;
+        TRACE(TraceLevel::Error, "unsupported exception");
         return EXIT_FAILURE;
     }
 

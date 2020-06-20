@@ -65,7 +65,7 @@ private:
     void dispatch(Tagged<Tag::ClientReply>);
     /* Worker */
     void dispatch(Tagged<Tag::WorkerReady>);
-    void dispatch(Tagged<Tag::WorkerRequest>, WorkerPool::Worker &);
+    void dispatch(Tagged<Tag::WorkerRequest>, WorkerPool::Worker &, ZMQIdentity clientIdentity);
     void dispatch(Tagged<Tag::WorkerReply>);
     void dispatch(Tagged<Tag::WorkerHeartbeat>);
     void dispatch(Tagged<Tag::WorkerDisconnect>);

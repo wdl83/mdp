@@ -156,6 +156,9 @@ static constexpr auto serviceUndefined = "error: service undefined";
 static constexpr auto serviceUnsupported = "service unsupported";
 static constexpr auto serviceBusy = "service busy";
 static constexpr auto serviceRegistered = "service registered";
+static constexpr auto serviceFailure =  "service failure";
+static constexpr auto statusSucess = "sucess";
+static constexpr auto statusFailure = "failure";
 }
 
 /* Client REPLY:
@@ -163,11 +166,36 @@ static constexpr auto serviceRegistered = "service registered";
  *  Frame 1: Empty (zero bytes, invisible to REQ application)
  *  Frame 2: "MDPC01" (six bytes, representing MDP/Client v0.1)
  *  Frame 3: Service name (printable string)
- *  Frames 4+: Reply body (opaque binary) */
+ *  Frame 4: status (sucess | failure)
+ *  Frames 5+: Reply body (opaque binary) */
 template <typename ...T_n>
-Message makeClientRep(const ZMQIdentity &identity, const std::string &service, const T_n & ...body)
+Message makeSucessClientRep(
+    const ZMQIdentity &identity,
+    const std::string &service,
+    const T_n & ...body)
 {
-    return makeMessage(identity, EmptyFrame{}, Client::Signature::self, service, body...);
+    return makeMessage(
+        identity,
+        EmptyFrame{},
+        Client::Signature::self,
+        service,
+        Broker::Signature::statusSucess,
+        body...);
+}
+
+template <typename ...T_n>
+Message makeFailureClientRep(
+    const ZMQIdentity &identity,
+    const std::string &service,
+    const T_n & ...body)
+{
+    return makeMessage(
+        identity,
+        EmptyFrame{},
+        Client::Signature::self,
+        service,
+        Broker::Signature::statusFailure,
+        body...);
 }
 
 /* Worker REQUEST
