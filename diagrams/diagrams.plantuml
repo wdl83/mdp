@@ -1,0 +1,52 @@
+@startuml simple_request
+participant Client
+participant Broker
+participant Worker
+
+Client -> Broker: request
+activate Client
+
+Broker -> Worker: forward request
+
+activate Worker
+
+hnote over Worker
+request processing
+end note
+
+Worker -> Broker: response
+
+deactivate Worker
+
+Broker -> Client: response
+
+deactivate Client
+@enduml
+
+@startuml worker_lifetime
+
+Worker -> Broker : ready
+
+activate Worker
+
+hnote over Broker
+add to
+WorkerPool
+end note
+
+loop
+Broker -> Worker: heartbeat
+Worker -> Broker: heartbeat
+end
+
+Worker -> Broker: disconnect
+
+hnote over Broker
+remove from
+WorkerPool
+end note
+
+deactivate Worker
+destroy Worker
+
+@enduml
