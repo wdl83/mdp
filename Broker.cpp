@@ -375,7 +375,7 @@ int main(int argc, char *const argv[])
 {
     std::string address;
 
-    for(char c; -1 != (c = ::getopt(argc, argv, "ha:"));)
+    for(int c; -1 != (c = ::getopt(argc, argv, "ha:"));)
     {
         switch(c)
         {
