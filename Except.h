@@ -4,24 +4,21 @@
 
 
 /* TODO: support proper customization */
-using MessageInvalid = Exception<std::invalid_argument>;
-using MessageFormatInvalid = Exception<std::invalid_argument>;
-using BrokerMessageFormatInvalid = MessageFormatInvalid;
-using WorkerMessageFormatInvalid = MessageFormatInvalid;
-using ClientMessageFormatInvalid = MessageFormatInvalid;
-using WorkerMessageFormatInvalid = MessageFormatInvalid;
+using MessageInvalid = EXCEPTION(std::invalid_argument);
+using MessageFormatInvalid = EXCEPTION(std::invalid_argument);
+using BrokerMessageFormatInvalid = EXCEPTION(std::invalid_argument);
+using WorkerMessageFormatInvalid = EXCEPTION(std::invalid_argument);
+using ClientMessageFormatInvalid = EXCEPTION(std::invalid_argument);
 
-using BrokerHeartbeatExpired = Exception<std::runtime_error>;
-using BrokerDisconnected = Exception<std::runtime_error>;
+using BrokerHeartbeatExpired = EXCEPTION(std::runtime_error);
+using BrokerDisconnected = EXCEPTION(std::runtime_error);
 
-using WorkerMessageFormatInvalid = MessageFormatInvalid;
+using FlowError = EXCEPTION(std::runtime_error);
 
-using FlowError = Exception<std::runtime_error>;
+using RecvFailed = EXCEPTION(std::runtime_error);
+using SendFailed = EXCEPTION(std::runtime_error);
 
-using RecvFailed = Exception<std::runtime_error>;
-using SendFailed = Exception<std::runtime_error>;
+using WorkerDuplicate = EXCEPTION(std::runtime_error);
+using ServiceUnsupported = EXCEPTION(std::runtime_error);
 
-using WorkerDuplicate = Exception<std::runtime_error>;
-using ServiceUnsupported = Exception<std::runtime_error>;
-
-using IdentityInvalid = Exception<std::invalid_argument>;
+using IdentityInvalid = EXCEPTION(std::invalid_argument);

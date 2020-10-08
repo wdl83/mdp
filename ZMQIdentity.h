@@ -22,7 +22,7 @@ public:
 
     ZMQIdentity(std::string str): value_{std::move(str)}
     {
-        ENSURE(maxLength >= value_.size(), Exception<std::length_error>);
+        ENSURE(maxLength >= value_.size(), RuntimeError);
     }
 
     explicit

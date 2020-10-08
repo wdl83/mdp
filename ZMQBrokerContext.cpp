@@ -7,8 +7,8 @@ ZMQBrokerContext::ZMQBrokerContext(ZMQIdentity identity, std::string address):
     identity_{std::move(identity)},
     address_{std::move(address)}
 {
-    ENSURE(context_, Exception<std::invalid_argument>);
-    ENSURE(!address_.empty(), Exception<std::invalid_argument>);
+    ENSURE(context_, RuntimeError);
+    ENSURE(!address_.empty(), RuntimeError);
 
     socket_.set(zmqpp::socket_option::identity, identity_.data(), identity_.size());
     socket_.set(zmqpp::socket_option::linger, 0);

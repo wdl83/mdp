@@ -21,7 +21,7 @@ int main(int argc, char *const argv[])
     std::string serviceName;
     std::string payloadName;
 
-    for(char c; -1 != (c = ::getopt(argc, argv, "ha:s:p:"));)
+    for(int c; -1 != (c = ::getopt(argc, argv, "ha:s:p:"));)
     {
         switch(c)
         {

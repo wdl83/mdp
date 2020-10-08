@@ -14,7 +14,7 @@ int main(int argc, char *const argv[])
     std::string address;
     std::string serviceName;
 
-    for(char c; -1 != (c = ::getopt(argc, argv, "ha:s:"));)
+    for(int c; -1 != (c = ::getopt(argc, argv, "ha:s:"));)
     {
         switch(c)
         {

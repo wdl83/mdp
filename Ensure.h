@@ -52,14 +52,18 @@ struct EnsureException
     std::string toString() const {return ::toString(dbgInfo);}
 };
 
-template <typename BaseException>
-struct Exception: public EnsureException, public BaseException
+template <typename BaseException, int ID>
+struct ExceptionImpl: public EnsureException, public BaseException
 {
-    Exception(DbgInfo info, const char *msg):
+    static constexpr const int id = ID;
+
+    ExceptionImpl(DbgInfo info, const char *msg):
         EnsureException{info, msg},
-        BaseException{EnsureException::toString() + ' ' + msg}
+        BaseException{'#' + std::to_string(id) + ' ' + EnsureException::toString() + ' ' + msg}
     {}
 };
+
+#define EXCEPTION(T) ExceptionImpl<T, __COUNTER__>
 
 #define TO_STRING_IMPL(x) #x
 #define TO_STRING(x) TO_STRING_IMPL(x)
@@ -70,7 +74,7 @@ struct Exception: public EnsureException, public BaseException
         if(!(cond)) \
         { \
             throw \
-                ExceptionType \
+                (ExceptionType) \
                 { \
                     DbgInfo{__FILE__, __LINE__, __PRETTY_FUNCTION__}, \
                     TO_STRING(ExceptionType) " : " TO_STRING(cond) \
@@ -80,7 +84,7 @@ struct Exception: public EnsureException, public BaseException
 
 #define ASSERT(cond) assert(cond)
 
-using RuntimeError = Exception<std::runtime_error>;
+using RuntimeError = EXCEPTION(std::runtime_error);
 
 struct ReportCErrNo : public std::runtime_error
 {
@@ -89,4 +93,4 @@ struct ReportCErrNo : public std::runtime_error
     {}
 };
 
-using CRuntimeError = Exception<ReportCErrNo>;
+using CRuntimeError = EXCEPTION(ReportCErrNo);
