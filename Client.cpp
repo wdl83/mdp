@@ -4,7 +4,7 @@
 auto Client::exec(
     const std::string &address,
     const std::string &serviceName,
-    PayloadSeq payloadSeq) -> PayloadSeq
+    const PayloadSeq &payloadSeq) -> PayloadSeq
 {
     auto zmqContext = ZMQContext{ZMQIdentity::unique(), address};
 

@@ -14,7 +14,7 @@ public:
     PayloadSeq exec(
         const std::string &address,
         const std::string &serviceName,
-        PayloadSeq payload);
+        const PayloadSeq &payload);
 private:
     Message onMessage(Message, const ZMQContext &, const std::string &);
     PayloadSeq onReply(Message);
