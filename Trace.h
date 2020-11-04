@@ -13,6 +13,8 @@ enum class TraceLevel
     Debug
 };
 
+using LogLevel = TraceLevel;
+
 namespace impl_ {
 
 template <typename T>
@@ -67,6 +69,21 @@ void trace(TraceLevel traceLevel, const T_n &...tail)
     do \
     { \
         trace(traceLevel, __FILE__, ':', __LINE__, ' ', __PRETTY_FUNCTION__, ' ', __VA_ARGS__); \
+    } while(false)
+
+#endif /* ENABLE_TRACE */
+
+
+#ifndef ENABLE_LOG
+
+#define LOG(...)
+
+#else
+
+#define LOG(logLevel, ...) \
+    do \
+    { \
+        trace(logLevel, __VA_ARGS__); \
     } while(false)
 
 #endif /* ENABLE_TRACE */
