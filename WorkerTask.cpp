@@ -47,11 +47,7 @@ void WorkerTask::operator()(zmqpp::socket &socket)
         /* Frame 4: Empty (zero bytes, envelope delimiter) */
         request.pop_front();
 
-        TRACE(TraceLevel::Debug, this, " begin transform");
-
         auto reply = transform_(std::move(request));
-
-        TRACE(TraceLevel::Debug, this, " end transform");
 
         /* Frame 4: Empty (zero bytes, envelope delimiter) */
         reply.push_front(nullptr, 0);

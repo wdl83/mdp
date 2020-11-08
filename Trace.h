@@ -68,7 +68,7 @@ void trace(TraceLevel traceLevel, const T_n &...tail)
 #define TRACE(traceLevel, ...) \
     do \
     { \
-        trace(traceLevel, __FILE__, ':', __LINE__, ' ', __PRETTY_FUNCTION__, ' ', __VA_ARGS__); \
+        trace(traceLevel, __FILE__, ':', __LINE__, ' ', __FUNCTION__, ' ', __VA_ARGS__); \
     } while(false)
 
 #endif /* ENABLE_TRACE */

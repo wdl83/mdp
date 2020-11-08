@@ -77,7 +77,7 @@ struct ExceptionImpl: public EnsureException, public BaseException
             throw \
                 (ExceptionType) \
                 { \
-                    DbgInfo{__FILE__, __LINE__, __PRETTY_FUNCTION__}, \
+                    DbgInfo{__FILE__, __LINE__, __FUNCTION__}, \
                     TO_STRING(ExceptionType) " : " TO_STRING(cond) \
                 }; \
         } \

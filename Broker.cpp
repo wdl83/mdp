@@ -46,6 +46,7 @@ void Broker::exec(const std::string &address)
         catch(...)
         {
             TRACE(TraceLevel::Error, this, " unsupported exception, restarting");
+            return;
         }
     }
 }
@@ -319,7 +320,7 @@ void Broker::onTimeout()
 
     for(const auto &identity : expired)
     {
-        TRACE(TraceLevel::Debug, this, " puring ", identity.asString());
+        TRACE(TraceLevel::Debug, this, " purging ", identity.asString());
 
         const auto iterator = workerPool_.findWorker(identity);
 

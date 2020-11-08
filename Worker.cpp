@@ -36,7 +36,7 @@ void Worker::exec(
         {
             monitor_.reset();
 
-            TRACE(TraceLevel::Debug, this, " service ", serviceName, " broker ", address);
+            TRACE(TraceLevel::Info, this, " service ", serviceName, " broker ", address);
 
             auto zmqContext = ZMQContext{ZMQIdentity::unique(), address};
 
@@ -78,7 +78,7 @@ void Worker::registerService(ZMQContext &zmqContext, const std::string &serviceN
 {
     auto ready = MDP::Worker::makeReady(serviceName);
 
-    TRACE(TraceLevel::Debug, this, " ", serviceName, " ", ready);
+    TRACE(TraceLevel::Info, this, " ", serviceName, " ", ready);
 
     send(zmqContext.socket_, std::move(ready), IOMode::Blocking);
     monitor_.selfHeartbeat();
