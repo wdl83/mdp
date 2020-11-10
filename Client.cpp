@@ -10,9 +10,7 @@ auto Client::exec(
 
     try
     {
-        TRACE(TraceLevel::Debug, this, " sending request for ", serviceName);
-
-        zmqContext.send(MDP::Client::makeReq(serviceName, payloadSeq));
+        onRequest(MDP::Client::makeReq(serviceName, payloadSeq), zmqContext);
         return onReply(onMessage(zmqContext.recv(), zmqContext, serviceName));
     }
     catch(const std::exception &except)
@@ -29,13 +27,17 @@ auto Client::exec(
     return {};
 }
 
+void Client::onRequest(Message message, ZMQContext &zmqContext)
+{
+    TRACE(TraceLevel::Debug, this, " ", message);
+    zmqContext.send(std::move(message));
+}
+
 auto Client::onMessage(
     Message msg,
     const ZMQContext &,
     const std::string &serviceName) -> Message
 {
-    TRACE(TraceLevel::Debug, this, " ", msg);
-
     ENSURE(4 <= msg.parts(), MessageFormatInvalid);
     /* Frame 0: empty */
     ENSURE(0 == msg.size(0), MessageFormatInvalid);

@@ -16,6 +16,7 @@ public:
         const std::string &serviceName,
         const PayloadSeq &payload);
 private:
+    void onRequest(Message, ZMQContext &);
     Message onMessage(Message, const ZMQContext &, const std::string &);
     PayloadSeq onReply(Message);
 
