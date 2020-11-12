@@ -1,6 +1,7 @@
 #include <unistd.h>
 
 #include <fstream>
+#include <iterator>
 
 #include <nlohmann/json.hpp>
 
@@ -11,7 +12,7 @@ using json = nlohmann::json;
 void help()
 {
     std::cout
-        << "client -a broker_address -s service_name -p payload_string"
+        << "client -a broker_address -s service_name -i [input.json|-] [-o output]"
         << std::endl;
 }
 
@@ -19,9 +20,10 @@ int main(int argc, char *const argv[])
 {
     std::string address;
     std::string serviceName;
-    std::string payloadName;
+    std::string iname;
+    std::string oname;
 
-    for(int c; -1 != (c = ::getopt(argc, argv, "ha:s:p:"));)
+    for(int c; -1 != (c = ::getopt(argc, argv, "ha:s:i:"));)
     {
         switch(c)
         {
@@ -30,13 +32,16 @@ int main(int argc, char *const argv[])
                 return EXIT_SUCCESS;
                 break;
             case 'a':
-                address = optarg;
+                address = optarg ? optarg : "";
                 break;
             case 's':
-                serviceName = optarg;
+                serviceName = optarg ? optarg : "";
                 break;
-            case 'p':
-                payloadName = optarg;
+            case 'i':
+                iname = optarg ? optarg : "";
+                break;
+            case 'o':
+                oname = optarg ? optarg : "";
                 break;
             case ':':
             case '?':
@@ -46,7 +51,7 @@ int main(int argc, char *const argv[])
         }
     }
 
-    if(address.empty() || serviceName.empty() || payloadName.empty())
+    if(address.empty() || serviceName.empty() || iname.empty())
     {
         help();
         return EXIT_FAILURE;
@@ -54,19 +59,55 @@ int main(int argc, char *const argv[])
 
     try
     {
-        std::ifstream payloadFile{payloadName};
+        json input;
+
+        if("-" == iname) std::cin >> input;
+        else std::ifstream{iname} >> input;
+
         Client::PayloadSeq payloadSeq;
 
-        for(auto i : json::parse(payloadFile))
-        {
-            payloadSeq.emplace_back(i.dump());
-        }
+        for(const auto &i : input) payloadSeq.emplace_back(i.dump());
 
         Client client;
 
-        const auto reply = client.exec(address, serviceName, std::move(payloadSeq));
+        const auto reply = client.exec(address, serviceName, payloadSeq);
 
-        for(const auto &i : reply) std::cout << i << std::endl;
+        ENSURE(!reply.empty(), RuntimeError);
+
+        auto begin = std::begin(reply);
+
+        ENSURE(MDP::Broker::Signature::statusSucess == *begin, RuntimeError);
+
+        ++begin;
+
+        if(std::end(reply) == begin) goto exit;
+
+        if(oname.empty())
+        {
+            std::cout << '[';
+
+            for(;begin != std::end(reply);)
+            {
+                std::cout << *begin;
+                ++begin;
+
+                if(begin != std::end(reply)) std::cout << ',';
+            }
+            std::cout << ']';
+        }
+        else
+        {
+            std::ofstream ofile{oname};
+
+            ofile << '[';
+
+            for(;begin != std::end(reply);)
+            {
+                ofile << *begin;
+                if(begin != std::end(reply)) ofile << ',';
+            }
+            ofile << ']';
+        }
     }
     catch(const std::exception &except)
     {
@@ -78,6 +119,6 @@ int main(int argc, char *const argv[])
         TRACE(TraceLevel::Error, "unsupported exception");
         return EXIT_FAILURE;
     }
-
+exit:
     return EXIT_SUCCESS;
 }
