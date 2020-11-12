@@ -68,12 +68,12 @@ struct ExceptionImpl: public EnsureException, public BaseException
 #define TO_STRING_IMPL(x) #x
 #define TO_STRING(x) TO_STRING_IMPL(x)
 
-#define ENSURE(cond, ExceptionType) \
+#define ENSURE_IMPL(cond, ExceptionType, ...) \
     do \
     { \
         if(!(cond)) \
         { \
-            TRACE(TraceLevel::Error, "throw ", TO_STRING(cond), ' ', TO_STRING(ExceptionType)); \
+            TRACE(TraceLevel::Error, "throw ", TO_STRING(cond), ' ', TO_STRING(ExceptionType), __VA_ARGS__); \
             throw \
                 (ExceptionType) \
                 { \
@@ -82,6 +82,9 @@ struct ExceptionImpl: public EnsureException, public BaseException
                 }; \
         } \
     } while(false)
+
+#define ENSURE(cond, ExceptionType) ENSURE_IMPL(cond, ExceptionType, "")
+#define vENSURE(cond, ExceptionType, ...) ENSURE_IMPL(cond, ExceptionType, __VA_ARGS__)
 
 #define ASSERT(cond) assert(cond)
 
