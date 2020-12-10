@@ -66,7 +66,7 @@ int main(int argc, char *const argv[])
 
         Client::PayloadSeq payloadSeq;
 
-        for(const auto &i : input) payloadSeq.emplace_back(i.dump());
+        payloadSeq.emplace_back(input.dump());
 
         Client client;
 
