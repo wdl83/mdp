@@ -73,7 +73,7 @@ struct ExceptionImpl: public EnsureException, public BaseException
     { \
         if(!(cond)) \
         { \
-            TRACE(TraceLevel::Error, "throw ", TO_STRING(cond), ' ', TO_STRING(ExceptionType), __VA_ARGS__); \
+            TRACE(TraceLevel::Error, "throw ", TO_STRING(cond), ", ", TO_STRING(ExceptionType), ", ", __VA_ARGS__); \
             throw \
                 (ExceptionType) \
                 { \
