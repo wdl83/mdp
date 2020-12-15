@@ -76,7 +76,7 @@ Message makeMessage(const T_n &...tail)
 namespace Client {
 
 namespace Signature {
-static constexpr auto self = "MDPC01";
+constexpr auto self = "MDPC01";
 } /* Signature */
 
 /* Client REQUEST:
@@ -95,12 +95,12 @@ Message makeReq(const std::string &service, const T_n & ...body)
 namespace Worker {
 
 namespace Signature {
-static constexpr auto self = "MDPW01";
-static constexpr auto ready = "\x1";
-static constexpr auto request = "\x2";
-static constexpr auto reply = "\x3";
-static constexpr auto heartbeat = "\x4";
-static constexpr auto disconnect = "\x5";
+constexpr auto self = "MDPW01";
+constexpr auto ready = "\x1";
+constexpr auto request = "\x2";
+constexpr auto reply = "\x3";
+constexpr auto heartbeat = "\x4";
+constexpr auto disconnect = "\x5";
 } /* Signature */
 
 /* Worker READY
@@ -152,13 +152,13 @@ Message makeDisconnect()
 namespace Broker {
 
 namespace Signature {
-static constexpr auto serviceUndefined = "error: service undefined";
-static constexpr auto serviceUnsupported = "service unsupported";
-static constexpr auto serviceBusy = "service busy";
-static constexpr auto serviceRegistered = "service registered";
-static constexpr auto serviceFailure =  "service failure";
-static constexpr auto statusSucess = "sucess";
-static constexpr auto statusFailure = "failure";
+constexpr auto serviceUndefined = "error: service undefined";
+constexpr auto serviceUnsupported = "service unsupported";
+constexpr auto serviceBusy = "service busy";
+constexpr auto serviceRegistered = "service registered";
+constexpr auto serviceFailure =  "service failure";
+constexpr auto statusSucess = "sucess";
+constexpr auto statusFailure = "failure";
 }
 
 /* Client REPLY:
@@ -240,6 +240,31 @@ Message makeDisconnect(const ZMQIdentity &identity)
 /* ADL for zmqpp::message */
 namespace zmqpp {
 
+
+template <typename T>
+void traceSerializeImpl(std::ostream &os, T value)
+{
+    os << value;
+}
+
+inline
+void traceSerializeImpl(std::ostream &os, char value)
+{
+    os << int(value);
+}
+
+inline
+void traceSerializeImpl(std::ostream &os, unsigned char value)
+{
+    os << int(value);
+}
+
+inline
+void traceSerializeImpl(std::ostream &os, signed char value)
+{
+    os << int(value);
+}
+
 inline
 void traceSerializeImpl(std::ostream &os, const MDP::Message &message)
 {
@@ -247,7 +272,9 @@ void traceSerializeImpl(std::ostream &os, const MDP::Message &message)
 
     for(auto i = 0u; i < message.parts(); ++i)
     {
-        os << '[' << i << ']' << '(' << message.get(i) << ')';
+        os << '[' << i << ']' << '(';
+        traceSerializeImpl(os, message.get(i));
+        os << ')';
     }
 
     os << '}';
