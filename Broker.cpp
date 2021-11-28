@@ -272,10 +272,9 @@ void Broker::dispatch(Tagged<Tag::WorkerDisconnect> tagged)
     TRACE(
         TraceLevel::Info,
         this,
-        " ", workerIdentity.asString(),
-        " ", workerIterator->serviceName_ ,
-        " ", workerIterator->state_,
-        " disconnected");
+        ", disconnecting: ", workerIdentity.asString(), ", ",
+        workerIterator->serviceName_ , ", ",
+        workerIterator->state_);
 
     if(brokerTasks_.valid(workerIdentity))
     {
