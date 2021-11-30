@@ -27,16 +27,11 @@ void Broker::exec(const std::string &address)
 
                         if(message) onMessage(std::move(message));
                     }
-                    /* in case of
-                     * 1) high load (message traffic)
-                     * 2) Worker and Broker heartbeats close timing
-                     * timeout on poller wont happen so send heartbeat if needed */
-                    sendHeartbeatIfNeeded();
+
                 }
-                else
-                {
-                    onTimeout();
-                }
+
+                checkExpired();
+                sendHeartbeatIfNeeded();
             }
         }
         catch(const std::exception &except)
@@ -291,7 +286,7 @@ void Broker::dispatch(Tagged<Tag::WorkerDisconnect> tagged)
     workerPool_.remove(workerIdentity);
 }
 
-void Broker::onTimeout()
+void Broker::checkExpired()
 {
     std::vector<ZMQIdentity> expired;
 
@@ -301,7 +296,7 @@ void Broker::onTimeout()
             if(worker.monitor_.peerHeartbeatExpired())
             {
                 TRACE(
-                    TraceLevel::Info,
+                    TraceLevel::Warning,
                     this,
                     " ", worker.identity_.asString(),
                     " ", worker.serviceName_,
@@ -319,7 +314,7 @@ void Broker::onTimeout()
 
     for(const auto &identity : expired)
     {
-        TRACE(TraceLevel::Debug, this, " purging ", identity.asString());
+        TRACE(TraceLevel::Warning, this, " purging ", identity.asString());
 
         const auto iterator = workerPool_.findWorker(identity);
 
@@ -338,7 +333,6 @@ void Broker::onTimeout()
         workerPool_.remove(identity);
     }
 
-    sendHeartbeatIfNeeded();
 }
 
 void Broker::sendHeartbeatIfNeeded()

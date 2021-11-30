@@ -70,7 +70,7 @@ private:
     void dispatch(Tagged<Tag::WorkerHeartbeat>);
     void dispatch(Tagged<Tag::WorkerDisconnect>);
     /* Misc */
-    void onTimeout();
+    void checkExpired();
     void sendHeartbeatIfNeeded();
     void dispatch(Tagged<Tag::Unsupported>);
 };
