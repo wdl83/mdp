@@ -7,8 +7,11 @@ TARGETS = $(OBJ_DIR)/$(TARGET).elf
 all:: $(TARGETS)
 
 $(OBJ_DIR)/%.elf: $(DST_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: %.cpp
 	mkdir -p "$(OBJ_DIR)/`dirname $<`"
-	$(CC) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $<
+	$(CC) $(CXXFLAGS) -o $@ -c $<
+
+clean:
+	rm $(OBJ_DIR) -rf

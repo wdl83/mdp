@@ -1,5 +1,5 @@
-CC=clang
-OBJ_DIR=obj
+CC=gcc
+OBJ_DIR = obj
 
 CXXFLAGS = \
 	-DENABLE_TRACE \
