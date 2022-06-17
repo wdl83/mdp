@@ -1,18 +1,19 @@
-#CC=clang
-CC=gcc
+CC=clang
+OBJ_DIR=obj
 
-FLAGS = \
+CXXFLAGS = \
 	-DENABLE_TRACE \
-	-I ../zmqpp-root/include \
+	-I zmqpp-root/include \
 	-Wall \
 	-Wextra \
 	-Wno-parentheses \
 	-Wshadow \
 	-Wunreachable-code \
-	-g
+	-g \
+	-std=c++14
 
 LDFLAGS = \
-	-L ../zmqpp-root/lib \
+	-L zmqpp-root/lib \
 	-lpthread \
 	-lstdc++ \
 	-lzmq \
@@ -20,23 +21,17 @@ LDFLAGS = \
 
 ifdef RELEASE
 
-FLAGS += \
+CXXFLAGS += \
 	-O2 \
-	-flto \
-	-fomit-frame-pointer
+	-flto
 
 else
 
-FLAGS += \
+CXXFLAGS += \
 	-O0 \
-	-fno-omit-frame-pointer \
 	-fsanitize=address
 
 LDFLAGS += \
 	-fsanitize=address
 
 endif
-
-CXXFLAGS = \
-	$(FLAGS) \
-	-std=c++14
