@@ -1,9 +1,11 @@
 CC=gcc
-OBJ_DIR = obj
+ifndef OBJ_DIR
+OBJ_DIR = ${PWD}/obj
+endif
 
 CXXFLAGS = \
 	-DENABLE_TRACE \
-	-I zmqpp-root/include \
+	-I ${OBJ_DIR}/zmqpp/include \
 	-Wall \
 	-Wextra \
 	-Wno-parentheses \
@@ -13,7 +15,7 @@ CXXFLAGS = \
 	-std=c++14
 
 LDFLAGS = \
-	-L zmqpp-root/lib \
+	-L ${OBJ_DIR}/zmqpp/lib \
 	-lpthread \
 	-lstdc++ \
 	-lzmq \

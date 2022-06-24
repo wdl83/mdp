@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  dev_env:
+    build:
+      context: .
+      args:
+        USR: ${USR}
+        UID: ${UID}
+        GID: ${GID}
+        DST: ${DST}
+    user: ${UID}:${GID}
+    image: bld_env:1.0
+    hostname: bld_env
+    container_name: bld_env
+    volumes:
+      - ${DST}:/home/${USR}/dst/
