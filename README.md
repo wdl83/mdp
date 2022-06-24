@@ -56,7 +56,7 @@ Broker requires the IP address and listen port.
 Running manually from console:
 
 ```console
-broker.elf -a tcp://0.0.0.0:6060
+broker -a tcp://0.0.0.0:6060
 ```
 
 or better as systemd service.
@@ -64,7 +64,7 @@ Create .config/systemd/user/broker.service
 
 ```cosnole
 # this config assumes you installed:
-# broker.elf in $HOME/bin
+# broker in $HOME/bin
 # libzmqpp.so* libraries in $HOME/lib
 #
 [Unit]
@@ -73,7 +73,7 @@ Description=MDP Broker
 [Service]
 Environment=TRACE_LEVEL=2
 Environment=LD_LIBRARY_PATH=$HOME/lib/:$LD_LIBRARY_PATH
-ExecStart=$HOME/bin/broker.elf -a tcp://0.0.0.0:6060
+ExecStart=$HOME/bin/broker -a tcp://0.0.0.0:6060
 Restart=on-failure
 RestartSec=10s
 
