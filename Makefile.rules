@@ -2,11 +2,11 @@
 
 OBJS = $(CXXSRCS:.cpp=.o) 
 DST_OBJS = $(addprefix $(OBJ_DIR)/, $(OBJS))
-TARGETS = $(OBJ_DIR)/$(TARGET).elf
+DST_TARGET = $(OBJ_DIR)/$(TARGET)
 
-all:: $(TARGETS)
+all:: $(DST_TARGET)
 
-$(OBJ_DIR)/%.elf: $(DST_OBJS)
+$(DST_TARGET): $(DST_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: %.cpp
@@ -14,4 +14,8 @@ $(OBJ_DIR)/%.o: %.cpp
 	$(CC) $(CXXFLAGS) -o $@ -c $<
 
 clean:
-	rm $(OBJ_DIR) -rf
+	rm $(DST_OBJS) $(DST_TARGET) -f
+
+install: $(DST_TARGET)
+	mkdir -p $(DST_DIR)/bin
+	cp $< $(DST_DIR)/bin

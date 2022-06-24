@@ -1,6 +1,11 @@
 CC=gcc
+
 ifndef OBJ_DIR
-OBJ_DIR = ${PWD}/obj
+$(error please define OBJ_DIR)
+endif
+
+ifndef DST_DIR
+$(error please define DST_DIR)
 endif
 
 CXXFLAGS = \

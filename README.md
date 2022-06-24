@@ -1,12 +1,12 @@
-Implementation of Majordomo Protocol Broker, Client and Worker
+Majordomo Protocol Broker, Client and Worker
 ==============================================================
 
-See: https://rfc.zeromq.org/spec:7/MDP/ for details
+[Majordomo Protocol](https://rfc.zeromq.org/spec:7/MDP)
 
 Dependencies
 ------------
 1. [zmq library](http://zeromq.org)
-1. [zmqpp: zmq c++ wrapper](https://github.com/zeromq/zmqpp)
+1. [zmqpp: zmq library c++ wrapper](https://github.com/zeromq/zmqpp)
 1. [json c++ library](https://github.com/nlohmann/json)
 
 ```console
@@ -23,6 +23,19 @@ cd mdp
 RELEASE=1 make
 ```
 Build artifacts will be placed in 'obj' dir, if you have not defined OBJ_DIR.
+
+Installing
+----------
+
+DST_DIR variable can be used to define prefix (must be absolute) path for:
+
+1. $DST_DIR/bin
+1. $DST_DIR/lib // zmqpp
+1. $DST_DIR/include // zmqpp
+
+```console
+RELEASE=1 DST_DIR=$HOME/opt make install
+```
 
 Building with Docker
 --------------------
