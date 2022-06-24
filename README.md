@@ -1,5 +1,3 @@
-# Majordomo Protocol 
-
 Implementation of Majordomo Protocol Broker, Client and Worker.
 See: https://rfc.zeromq.org/spec:7/MDP/ for detail.s
 
@@ -11,7 +9,7 @@ Dependencies
 1. [json c++ library](https://github.com/nlohmann/json)
 
 ```console
-# for Debian based
+# Debian based
 sudo apt-get install nlohmann-json3-dev libzmq3-dev
 ```
 
