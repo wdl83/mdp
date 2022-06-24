@@ -7,7 +7,13 @@ See: https://rfc.zeromq.org/spec:7/MDP/ for detail.s
 Dependencies
 ------------
 1. [zmq library](http://zeromq.org)
-1. [zmqpp: zmq C++ wrapper](https://github.com/zeromq/zmqpp)
+1. [zmqpp: zmq c++ wrapper](https://github.com/zeromq/zmqpp)
+1. [json c++ library](https://github.com/nlohmann/json)
+
+```console
+# for Debian based
+sudo apt-get install nlohmann-json3-dev libzmq3-dev
+```
 
 Building
 --------
@@ -17,17 +23,20 @@ git clone --recurse-submodules https://github.com/wdl83/mdp
 cd mdp 
 RELEASE=1 make
 ```
+Build artifacts will be placed in 'obj' dir, if you have not defined OBJ_DIR.
 
 Building with Docker
 --------------------
 
 ```console
 git clone https://github.com/wdl83/mdp
-cd bootloader
+cd mdp 
 ./make_env.sh # generate .env
 sudo docker-compose up
 grep DST= .env # directory where artifacts are located
+
 ````
+Build artifacts will be placed in $DST dir (generated with mktemp -d).
 
 Usage
 -----
@@ -36,11 +45,9 @@ Usage
 broker.elf -a tcp://0.0.0.0:6060
 ```
 
-or better as systemd service:
+or better as systemd service. Create .config/systemd/user/broker.service
 
 ```cosnole
-# create .config/systemd/user/broker.service
-#
 # this config assumes you installed:
 # broker.elf in $HOME/bin
 # libzmqpp.so* libraries in $HOME/lib
