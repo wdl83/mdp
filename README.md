@@ -1,6 +1,7 @@
-Implementation of Majordomo Protocol Broker, Client and Worker.
-See: https://rfc.zeromq.org/spec:7/MDP/ for detail.s
+Implementation of Majordomo Protocol Broker, Client and Worker
+==============================================================
 
+See: https://rfc.zeromq.org/spec:7/MDP/ for details
 
 Dependencies
 ------------
