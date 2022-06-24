@@ -40,12 +40,15 @@ Build artifacts will be placed in $DST dir (generated with mktemp -d).
 
 Usage
 -----
+Broker requires the IP address and listen port.
+Running manually from console:
 
 ```console
 broker.elf -a tcp://0.0.0.0:6060
 ```
 
-or better as systemd service. Create .config/systemd/user/broker.service
+or better as systemd service.
+Create .config/systemd/user/broker.service
 
 ```cosnole
 # this config assumes you installed:
@@ -70,6 +73,12 @@ After systemd service file is created enable it:
 
 ```console
 systemctl --user enable broker.service
+```
+
+and start
+
+```console
+systemctl --user start broker.service
 ```
 
 Enable systemd to start $USER services at boot (no $USER login required)
