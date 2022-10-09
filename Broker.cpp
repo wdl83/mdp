@@ -147,6 +147,7 @@ void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
 
     if(!workerPool_.valid(serviceName))
     {
+        TRACE(TraceLevel::Warning, this, "service unsupported ", serviceName);
         dispatch(
             Tagged<Tag::ClientReply>(
                 makeFailureClientRep(clientIdentity, serviceName, Signature::serviceUnsupported)));

@@ -32,39 +32,28 @@ void Worker::exec(
 {
     for(;;)
     {
-        try
-        {
-            monitor_.reset();
+        monitor_.reset();
 
-            TRACE(TraceLevel::Info, this, " service ", serviceName, " broker ", address);
+        TRACE(TraceLevel::Info, this, " service ", serviceName, " broker ", address);
 
-            auto zmqContext = ZMQContext{ZMQIdentity::unique(), address};
+        auto zmqContext = ZMQContext{ZMQIdentity::unique(), address};
 
-            /* in case of worker crash - send disconnect to broker */
-            Guard guard{zmqContext.socket_};
+        /* in case of worker crash - send disconnect to broker */
+        Guard guard{zmqContext.socket_};
 
-            auto r =
-                std::async(
-                    std::launch::async,
-                    [&transform, &zmqContext]()
-                    {
-                        WorkerTask{transform}(zmqContext.slaveSocket_);
-                    });
+        auto r =
+            std::async(
+                std::launch::async,
+                [&transform, &zmqContext]()
+                {
+                WorkerTask{transform}(zmqContext.slaveSocket_);
+                });
 
-            WorkerTask::MasterGuard masterGuard{zmqContext.masterSocket_};
+        WorkerTask::MasterGuard masterGuard{zmqContext.masterSocket_};
 
-            exec(zmqContext, serviceName);
-            /* if worker thread throws exception it will be propagated on get() */
-            r.get();
-        }
-        catch(const std::exception &except)
-        {
-            TRACE(TraceLevel::Error, this, " ", except.what(), " restarting");
-        }
-        catch(...)
-        {
-            TRACE(TraceLevel::Error, this, " Unsupported exception, restarting");
-        }
+        exec(zmqContext, serviceName);
+        /* if worker thread throws exception it will be propagated on get() */
+        r.get();
     }
 }
 
