@@ -157,7 +157,7 @@ constexpr auto serviceUnsupported = "service unsupported";
 constexpr auto serviceBusy = "service busy";
 constexpr auto serviceRegistered = "service registered";
 constexpr auto serviceFailure =  "service failure";
-constexpr auto statusSucess = "sucess";
+constexpr auto statusSucess = "success";
 constexpr auto statusFailure = "failure";
 }
 
@@ -166,7 +166,7 @@ constexpr auto statusFailure = "failure";
  *  Frame 1: Empty (zero bytes, invisible to REQ application)
  *  Frame 2: "MDPC01" (six bytes, representing MDP/Client v0.1)
  *  Frame 3: Service name (printable string)
- *  Frame 4: status (sucess | failure)
+ *  Frame 4: status (success | failure)
  *  Frames 5+: Reply body (opaque binary) */
 template <typename ...T_n>
 Message makeSucessClientRep(
