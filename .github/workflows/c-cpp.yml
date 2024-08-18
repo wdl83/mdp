@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install deps
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install nlohmann-json3-dev libzmq3-dev
     - uses: actions/checkout@v4
       with:
         submodules: recursive
