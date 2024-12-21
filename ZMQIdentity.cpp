@@ -1,6 +1,13 @@
+#include "Ensure.h"
 #include "sys/types.h"
-#include "unistd.h"
 
+#include <limits.h>
+
+#define _GNU_SOURCE
+#include "unistd.h"
+#undef _GNU_SOURCE
+
+#include <mutex>
 #include <sstream>
 #include <thread>
 
@@ -9,14 +16,22 @@
 
 thread_local int ZMQIdentity::no_;
 
+namespace
+{
+std::once_flag onceFlag;
+char hostname[HOST_NAME_MAX];
+} // namespace
+
 std::string ZMQIdentity::uniqueId()
 {
-    std::ostringstream oss;
+    std::call_once(
+        onceFlag,
+        []() { ENSURE(0 == ::gethostname(hostname, sizeof(hostname)), RuntimeError); });
 
-    oss
-        << ::getpid()
-        << "#" << std::this_thread::get_id()
-        << "@" << no_;
-    ++no_;
-    return oss.str();
+    const auto id =
+        hostname
+        + std::to_string(::getpid())
+        + ':' + std::to_string(::gettid())
+        + '@' + std::to_string(++no_);
+    return id;
 }
