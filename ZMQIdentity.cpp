@@ -29,9 +29,9 @@ std::string ZMQIdentity::uniqueId()
         []() { ENSURE(0 == ::gethostname(hostname, sizeof(hostname)), RuntimeError); });
 
     const auto id =
-        hostname
-        + std::to_string(::getpid())
+        std::string{hostname}
+        + ':' + std::to_string(::getpid())
         + ':' + std::to_string(::gettid())
-        + '@' + std::to_string(++no_);
+        + '#' + std::to_string(++no_);
     return id;
 }

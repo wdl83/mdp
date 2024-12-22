@@ -18,7 +18,7 @@ struct WorkerPool
     {
         enum class State
         {
-            Idle, Busy
+            begin, Idle = begin, Busy, end
         };
 
         friend
@@ -28,7 +28,7 @@ struct WorkerPool
             {
                 "idle", "busy"
             };
-            os << name[int(s)];
+            os << (State::begin <= s && State::end > s ? name[int(s)] : "?");
             return os;
         }
 
@@ -42,6 +42,13 @@ struct WorkerPool
             state_{State::Idle},
             identity_{std::move(identity)}
         {}
+
+        friend
+        std::ostream &operator<< (std::ostream &os, const Worker &w)
+        {
+            os << w.identity_.asString() << ' ' << w.serviceName_ << ' ' << w.state_;
+                return os;
+        }
     };
 
     using WorkerSeq = std::list<Worker>;
@@ -110,7 +117,7 @@ public:
         return findWorker(workerSeq, identity);
     }
 
-    void append(const std::string &serviceName, const ZMQIdentity &identity)
+    size_t append(const std::string &serviceName, const ZMQIdentity &identity)
     {
         auto &workerSeq = serviceMap_[serviceName];
 
@@ -121,9 +128,10 @@ public:
         ENSURE(0 == serviceLookup_.count(identity), WorkerDuplicate);
 
         serviceLookup_[identity] = serviceName;
+        return workerSeq.size();
     }
 
-    void remove(const ZMQIdentity &identity)
+    size_t remove(const ZMQIdentity &identity)
     {
         ENSURE(0 < serviceLookup_.count(identity), IdentityInvalid);
 
@@ -131,7 +139,10 @@ public:
         auto &workerSeq = serviceMap_[serviceName];
 
         workerSeq.erase(findWorker(workerSeq, identity));
+        const auto num = workerSeq.size();
         if(workerSeq.empty()) serviceMap_.erase(serviceName);
+        // WARNING: workerSeq ref invalid
         serviceLookup_.erase(identity);
+        return num;
     }
 };

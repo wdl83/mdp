@@ -1,6 +1,7 @@
 #include "Broker.h"
 #include "Except.h"
 #include "MDP.h"
+#include "ZMQIdentity.h"
 #include "utils.h"
 
 #include <unistd.h>
@@ -14,6 +15,10 @@ void Broker::exec(const std::string &address)
     for(;;)
     {
         zmqContextHandle_ = std::make_unique<ZMQContext>(ZMQIdentity::unique(), address);
+        TRACE(
+            TraceLevel::Info,
+            zmqContextHandle_->address_,
+            ' ', zmqContextHandle_->identity_.asString());
 
         try
         {
@@ -36,11 +41,11 @@ void Broker::exec(const std::string &address)
         }
         catch(const std::exception &except)
         {
-            TRACE(TraceLevel::Error, this, " ", except.what(), " restarting");
+            TRACE(TraceLevel::Error, except.what(), " restarting");
         }
         catch(...)
         {
-            TRACE(TraceLevel::Error, this, " unsupported exception, restarting");
+            TRACE(TraceLevel::Error, "unsupported exception, restarting");
             return;
         }
     }
@@ -63,7 +68,7 @@ void Broker::onMessage(MessageHandle handle)
     }
     catch(const EnsureException &except)
     {
-        TRACE(TraceLevel::Warning, this, ' ', except.invariant);
+        TRACE(TraceLevel::Warning, except.invariant);
         dispatch(Tagged<Tag::Unsupported>{std::move(handle)});
         return;
     }
@@ -85,7 +90,7 @@ void Broker::onMessage(MessageHandle handle)
 void Broker::onClientMessage(MessageHandle handle)
 {
     ASSERT(handle);
-    TRACE(TraceLevel::Debug, this, " ", handle);
+    TRACE(TraceLevel::Debug, handle);
 
     dispatch(Tagged<Tag::ClientRequest>(std::move(handle)));
 }
@@ -122,13 +127,13 @@ void Broker::onWorkerMessage(MessageHandle handle)
 
 void Broker::dispatch(Tagged<Tag::ClientReply> tagged)
 {
-    TRACE(TraceLevel::Debug, this, ' ', tagged.handle);
+    TRACE(TraceLevel::Debug, tagged.handle);
     send(zmqContextHandle_->socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
 void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
 {
-    TRACE(TraceLevel::Debug, this, tagged.handle);
+    TRACE(TraceLevel::Debug, tagged.handle);
     ASSERT(3 <= tagged.handle->parts());
 
     using namespace MDP::Broker;
@@ -147,7 +152,7 @@ void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
 
     if(!workerPool_.valid(serviceName))
     {
-        TRACE(TraceLevel::Warning, this, "service unsupported ", serviceName);
+        TRACE(TraceLevel::Warning, "service unsupported ", serviceName);
         dispatch(
             Tagged<Tag::ClientReply>(
                 makeFailureClientRep(clientIdentity, serviceName, Signature::serviceUnsupported)));
@@ -180,12 +185,10 @@ void Broker::dispatch(Tagged<Tag::WorkerReady> tagged)
     ASSERT(tagged.handle);
     ASSERT(5 == tagged.handle->parts());
 
-    auto workerIdentity = ZMQIdentity{tagged.handle->get(0)};
+    auto identity = ZMQIdentity{tagged.handle->get(0)};
     const auto serviceName = tagged.handle->get(4);
-
-    TRACE(TraceLevel::Info, this, " ", workerIdentity.asString(), " ", serviceName,  " ready");
-
-    workerPool_.append(serviceName, workerIdentity);
+    const auto num = workerPool_.append(serviceName, identity);
+    TRACE(TraceLevel::Info, identity.asString(), ' ', serviceName, " workers ", num, " ready");
 }
 
 void Broker::dispatch(
@@ -193,7 +196,7 @@ void Broker::dispatch(
     WorkerPool::Worker &worker,
     ZMQIdentity clientIdentity)
 {
-    TRACE(TraceLevel::Debug, this, ' ', tagged.handle);
+    TRACE(TraceLevel::Debug, tagged.handle);
 
     worker.state_ = WorkerPool::Worker::State::Busy;
     worker.monitor_.selfHeartbeat();
@@ -213,8 +216,7 @@ void Broker::dispatch(Tagged<Tag::WorkerReply> tagged)
 
     TRACE(
         TraceLevel::Debug,
-        this,
-        " work ", workerIdentity.asString(),
+        "work ", workerIdentity.asString(),
         " serviceName ", workerIterator->serviceName_ ,
         " state ", workerIterator->state_,
         " reply");
@@ -231,7 +233,6 @@ void Broker::dispatch(Tagged<Tag::WorkerReply> tagged)
     }
 
     dispatch(Tagged<Tag::ClientReply>{std::move(reply)});
-
     workerIterator->monitor_.peerHeartbeat();
     workerIterator->state_ = WorkerPool::Worker::State::Idle;
     brokerTasks_.remove(workerIdentity);
@@ -242,19 +243,11 @@ void Broker::dispatch(Tagged<Tag::WorkerHeartbeat> tagged)
     ASSERT(tagged.handle);
     ASSERT(0 < tagged.handle->parts());
 
-    const auto workerIdentity = ZMQIdentity{tagged.handle->get(0)};
-    const auto workerIterator = workerPool_.findWorker(workerIdentity);
+    const auto identity = ZMQIdentity{tagged.handle->get(0)};
+    const auto i = workerPool_.findWorker(identity);
 
-    TRACE(
-        TraceLevel::Debug,
-        this,
-        " ", workerIdentity.asString(),
-        " ", workerIterator->serviceName_ ,
-        " ", workerIterator->state_,
-        " ", workerIterator->monitor_,
-        " heartbeat");
-
-    workerIterator->monitor_.peerHeartbeat();
+    TRACE(TraceLevel::Trace, *i, ' ', i->monitor_, " heartbeat");
+    i->monitor_.peerHeartbeat();
 }
 
 void Broker::dispatch(Tagged<Tag::WorkerDisconnect> tagged)
@@ -262,29 +255,26 @@ void Broker::dispatch(Tagged<Tag::WorkerDisconnect> tagged)
     ASSERT(tagged.handle);
     ASSERT(0 < tagged.handle->parts());
 
-    const auto workerIdentity = ZMQIdentity{tagged.handle->get(0)};
-    const auto workerIterator = workerPool_.findWorker(workerIdentity);
+    const auto identity = ZMQIdentity{tagged.handle->get(0)};
+    const auto i = workerPool_.findWorker(identity);
+    const auto serviceName = i->serviceName_;
 
-    TRACE(
-        TraceLevel::Info,
-        this,
-        ", disconnecting: ", workerIdentity.asString(), ", ",
-        workerIterator->serviceName_ , ", ",
-        workerIterator->state_);
+    TRACE(TraceLevel::Info, "disconnecting: ", *i);
 
-    if(brokerTasks_.valid(workerIdentity))
+    if(brokerTasks_.valid(identity))
     {
-        const auto &taskInfo = brokerTasks_.taskInfo(workerIdentity);
+        const auto &taskInfo = brokerTasks_.taskInfo(identity);
 
         dispatch(
             Tagged<Tag::ClientReply>(
                 MDP::Broker::makeFailureClientRep(
                     taskInfo.clientIdentity_,
-                    workerIterator->serviceName_,
+                    i->serviceName_,
                     MDP::Broker::Signature::serviceFailure)));
-        brokerTasks_.remove(workerIdentity);
+        brokerTasks_.remove(identity);
     }
-    workerPool_.remove(workerIdentity);
+    const auto num = workerPool_.remove(identity);
+    TRACE(TraceLevel::Info, serviceName, " workers ", num);
 }
 
 void Broker::checkExpired()
@@ -298,10 +288,9 @@ void Broker::checkExpired()
             {
                 TRACE(
                     TraceLevel::Warning,
-                    this,
-                    " ", worker.identity_.asString(),
-                    " ", worker.serviceName_,
-                    " ", worker.state_,
+                    worker.identity_.asString(),
+                    ' ', worker.serviceName_,
+                    ' ', worker.state_,
                     " heartbeat expired, disconnecting");
                 send(
                     zmqContextHandle_->socket_,
@@ -313,27 +302,30 @@ void Broker::checkExpired()
             }
         });
 
-    for(const auto &identity : expired)
+    for(const auto &identity : expired) purge(identity);
+}
+
+void Broker::purge(ZMQIdentity identity)
+{
+    const auto i = workerPool_.findWorker(identity);
+    const auto serviceName = i->serviceName_;
+
+    TRACE(TraceLevel::Warning, *i);
+
+    if(brokerTasks_.valid(identity))
     {
-        TRACE(TraceLevel::Warning, this, " purging ", identity.asString());
+        const auto &taskInfo = brokerTasks_.taskInfo(identity);
 
-        const auto iterator = workerPool_.findWorker(identity);
-
-        if(brokerTasks_.valid(identity))
-        {
-            const auto &taskInfo = brokerTasks_.taskInfo(identity);
-
-            dispatch(
-                Tagged<Tag::ClientReply>(
-                    MDP::Broker::makeFailureClientRep(
-                        taskInfo.clientIdentity_,
-                        iterator->serviceName_,
-                        MDP::Broker::Signature::serviceFailure)));
-            brokerTasks_.remove(identity);
-        }
-        workerPool_.remove(identity);
+        dispatch(
+            Tagged<Tag::ClientReply>(
+                MDP::Broker::makeFailureClientRep(
+                    taskInfo.clientIdentity_,
+                    i->serviceName_,
+                    MDP::Broker::Signature::serviceFailure)));
+        brokerTasks_.remove(identity);
     }
-
+    const auto num = workerPool_.remove(identity);
+    TRACE(TraceLevel::Info, serviceName, " workers ", num);
 }
 
 void Broker::sendHeartbeatIfNeeded()
@@ -355,7 +347,7 @@ void Broker::sendHeartbeatIfNeeded()
 void Broker::dispatch(Tagged<Tag::Unsupported> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(TraceLevel::Warning, this, " unsupported message discarded ", tagged.handle);
+    TRACE(TraceLevel::Warning, "unsupported message discarded ", tagged.handle);
 }
 
 
@@ -403,7 +395,7 @@ int main(int argc, char *const argv[])
     }
     catch(const std::exception &except)
     {
-        TRACE(TraceLevel::Error, " ", except.what());
+        TRACE(TraceLevel::Error, except.what());
         return EXIT_FAILURE;
     }
     catch(...)

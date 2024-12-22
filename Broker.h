@@ -16,6 +16,7 @@
 #include "MDP.h"
 #include "WorkerPool.h"
 #include "ZMQBrokerContext.h"
+#include "ZMQIdentity.h"
 
 
 struct Broker
@@ -71,6 +72,7 @@ private:
     void dispatch(Tagged<Tag::WorkerDisconnect>);
     /* Misc */
     void checkExpired();
+    void purge(ZMQIdentity);
     void sendHeartbeatIfNeeded();
     void dispatch(Tagged<Tag::Unsupported>);
 };
