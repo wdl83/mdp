@@ -6,13 +6,13 @@
 
 WorkerTask::MasterGuard::~MasterGuard()
 {
-    TRACE(TraceLevel::Info, this);
+    TRACE(TraceLevel::Debug, this);
     send(socket_, zmqpp::message{"exit"}, IOMode::Blocking);
 }
 
 WorkerTask::SlaveGuard::~SlaveGuard()
 {
-    TRACE(TraceLevel::Info, this);
+    TRACE(TraceLevel::Debug, this);
     send(socket_, zmqpp::message{"exited"}, IOMode::Blocking);
 }
 

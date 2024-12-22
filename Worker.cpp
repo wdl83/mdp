@@ -15,7 +15,7 @@ struct Guard
 
     ~Guard()
     {
-        TRACE(TraceLevel::Info, this, " disconnecting");
+        TRACE(TraceLevel::Debug, this, " disconnecting");
         send(socket_, MDP::Worker::makeDisconnect(), IOMode::Blocking);
     }
 };
@@ -46,7 +46,8 @@ void Worker::exec(
                 std::launch::async,
                 [&transform, &zmqContext]()
                 {
-                WorkerTask{transform}(zmqContext.slaveSocket_);
+                    WorkerTask task{transform};
+                    task(zmqContext.slaveSocket_);
                 });
 
         WorkerTask::MasterGuard masterGuard{zmqContext.masterSocket_};
@@ -67,7 +68,7 @@ void Worker::registerService(ZMQContext &zmqContext, const std::string &serviceN
 {
     auto ready = MDP::Worker::makeReady(serviceName);
 
-    TRACE(TraceLevel::Info, this, " ", serviceName, " ", ready);
+    TRACE(TraceLevel::Info, this, ' ', serviceName, ' ', ready);
 
     send(zmqContext.socket_, std::move(ready), IOMode::Blocking);
     monitor_.selfHeartbeat();
@@ -75,11 +76,9 @@ void Worker::registerService(ZMQContext &zmqContext, const std::string &serviceN
 
 void Worker::provideService(ZMQContext &zmqContext, const std::string &serviceName)
 {
-    TRACE(TraceLevel::Debug, this, " ", serviceName);
-
     for(uint64_t cntr = 0;; ++cntr)
     {
-        TRACE(TraceLevel::Debug, this, " [", cntr, "] waiting");
+        TRACE(TraceLevel::Trace, this, ' ', serviceName, " [", cntr, "] waiting");
 
         if(zmqContext.poller_.poll(timeout.count()))
         {
@@ -154,7 +153,7 @@ void Worker::onMessage(ZMQContext &zmqContext, MessageHandle handle)
 void Worker::onTaskMessage(ZMQContext &zmqContext, MessageHandle handle)
 {
     ASSERT(handle);
-    TRACE(TraceLevel::Debug, this, " ", handle);
+    TRACE(TraceLevel::Trace, this, ' ', handle);
     dispatch(zmqContext, Tagged<Tag::ClientResponse>{std::move(handle)});
 }
 
@@ -167,17 +166,15 @@ void Worker::onTimeout(ZMQContext &zmqContext)
 
 void Worker::sendHeartbeatIfNeeded(ZMQContext &zmqContext)
 {
-    if(monitor_.shouldHeartbeat())
-    {
-        send(zmqContext.socket_, MDP::Worker::makeHeartbeat(), IOMode::NonBlockig);
-        monitor_.selfHeartbeat();
-    }
+    if(!monitor_.shouldHeartbeat()) return;
+    send(zmqContext.socket_, MDP::Worker::makeHeartbeat(), IOMode::NonBlockig);
+    monitor_.selfHeartbeat();
 }
 
 void Worker::dispatch(ZMQContext &zmqContext, Tagged<Tag::ClientRequest> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(TraceLevel::Debug, this, " ", tagged.handle);
+    TRACE(TraceLevel::Debug, this, ' ', tagged.handle);
     /* every valid message received is treated as peers heartbeat */
     monitor_.peerHeartbeat();
     send(zmqContext.masterSocket_, std::move(*tagged.handle), IOMode::Blocking);
@@ -186,14 +183,14 @@ void Worker::dispatch(ZMQContext &zmqContext, Tagged<Tag::ClientRequest> tagged)
 void Worker::dispatch(ZMQContext &zmqContext, Tagged<Tag::ClientResponse> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(TraceLevel::Debug, this, " ", tagged.handle);
+    TRACE(TraceLevel::Debug, this, ' ', tagged.handle);
     send(zmqContext.socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
 void Worker::dispatch(ZMQContext &, Tagged<Tag::BrokerHeartbeat> tagged)
 {
     ASSERT(tagged.handle);
-    TRACE(TraceLevel::Debug, this, " ", monitor_);
+    TRACE(TraceLevel::Trace, this, ' ', monitor_);
     monitor_.peerHeartbeat();
 }
 

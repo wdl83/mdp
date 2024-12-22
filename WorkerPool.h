@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <ctime>
 #include <map>
 #include <string>
 #include <vector>
@@ -9,6 +10,7 @@
 #include "Ensure.h"
 #include "Except.h"
 #include "MutualHeartbeatMonitor.h"
+#include "Trace.h"
 #include "ZMQIdentity.h"
 
 
@@ -71,6 +73,10 @@ private:
                 });
     }
 public:
+    WorkerPool() = default;
+    WorkerPool(const WorkerPool &) = delete;
+    WorkerPool &operator=(const WorkerPool &) = delete;
+
     template <typename F>
     void forEachWorker(F f)
     {
@@ -144,5 +150,16 @@ public:
         // WARNING: workerSeq ref invalid
         serviceLookup_.erase(identity);
         return num;
+    }
+
+    void dumpState(TraceLevel level)
+    {
+        uint64_t no = 0;
+        forEachWorker(
+            [&](const WorkerPool::Worker &worker)
+            {
+                TRACE(level, "worker[", no, "] ", worker);
+                ++no;
+            });
     }
 };

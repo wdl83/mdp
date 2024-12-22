@@ -2,6 +2,7 @@
 #include "Except.h"
 #include "MDP.h"
 #include "ZMQIdentity.h"
+#include "ensure/Trace.h"
 #include "utils.h"
 
 #include <unistd.h>
@@ -90,8 +91,6 @@ void Broker::onMessage(MessageHandle handle)
 void Broker::onClientMessage(MessageHandle handle)
 {
     ASSERT(handle);
-    TRACE(TraceLevel::Debug, handle);
-
     dispatch(Tagged<Tag::ClientRequest>(std::move(handle)));
 }
 
@@ -127,13 +126,13 @@ void Broker::onWorkerMessage(MessageHandle handle)
 
 void Broker::dispatch(Tagged<Tag::ClientReply> tagged)
 {
-    TRACE(TraceLevel::Debug, tagged.handle);
+    TRACE(TraceLevel::Debug, "client rep ", tagged.handle);
     send(zmqContextHandle_->socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
 void Broker::dispatch(Tagged<Tag::ClientRequest> tagged)
 {
-    TRACE(TraceLevel::Debug, tagged.handle);
+    TRACE(TraceLevel::Debug, "client req ", tagged.handle);
     ASSERT(3 <= tagged.handle->parts());
 
     using namespace MDP::Broker;
@@ -188,7 +187,8 @@ void Broker::dispatch(Tagged<Tag::WorkerReady> tagged)
     auto identity = ZMQIdentity{tagged.handle->get(0)};
     const auto serviceName = tagged.handle->get(4);
     const auto num = workerPool_.append(serviceName, identity);
-    TRACE(TraceLevel::Info, identity.asString(), ' ', serviceName, " workers ", num, " ready");
+    TRACE(TraceLevel::Info, "worker ", identity.asString(), " ready ", serviceName, " workers ", num);
+    workerPool_.dumpState(TraceLevel::Debug);
 }
 
 void Broker::dispatch(
@@ -196,11 +196,11 @@ void Broker::dispatch(
     WorkerPool::Worker &worker,
     ZMQIdentity clientIdentity)
 {
-    TRACE(TraceLevel::Debug, tagged.handle);
-
     worker.state_ = WorkerPool::Worker::State::Busy;
     worker.monitor_.selfHeartbeat();
-    brokerTasks_.append(workerPool_.findWorker(worker.identity_), clientIdentity);
+    const auto i = workerPool_.findWorker(worker.identity_);
+    brokerTasks_.append(i, clientIdentity);
+    TRACE(TraceLevel::Debug, "req ", tagged.handle, " for worker ", *i);
     send(zmqContextHandle_->socket_, std::move(*tagged.handle), IOMode::Blocking);
 }
 
@@ -216,10 +216,8 @@ void Broker::dispatch(Tagged<Tag::WorkerReply> tagged)
 
     TRACE(
         TraceLevel::Debug,
-        "work ", workerIdentity.asString(),
-        " serviceName ", workerIterator->serviceName_ ,
-        " state ", workerIterator->state_,
-        " reply");
+        "rep from worker ", *workerIterator,
+        " for client ", clientIdentity.asString());
 
     auto reply =
         MDP::Broker::makeSucessClientRep(
@@ -275,6 +273,7 @@ void Broker::dispatch(Tagged<Tag::WorkerDisconnect> tagged)
     }
     const auto num = workerPool_.remove(identity);
     TRACE(TraceLevel::Info, serviceName, " workers ", num);
+    workerPool_.dumpState(TraceLevel::Info);
 }
 
 void Broker::checkExpired()
@@ -326,6 +325,7 @@ void Broker::purge(ZMQIdentity identity)
     }
     const auto num = workerPool_.remove(identity);
     TRACE(TraceLevel::Info, serviceName, " workers ", num);
+    workerPool_.dumpState(TraceLevel::Info);
 }
 
 void Broker::sendHeartbeatIfNeeded()
