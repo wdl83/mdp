@@ -1,2 +1,3 @@
-zmqpp-root
-obj
+install_dir
+build_dir
+docker/.env

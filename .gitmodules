@@ -1,6 +1,6 @@
 [submodule "zmqpp"]
-	path = zmqpp
+	path = modules/zmqpp
 	url = https://github.com/wdl83/zmqpp
 [submodule "ensure"]
-	path = ensure
+	path = modules/ensure
 	url = https://github.com/wdl83/ensure

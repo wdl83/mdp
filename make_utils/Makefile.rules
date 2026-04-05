@@ -1,0 +1,34 @@
+$(if $(TARGET),,$(error TARGET is not defined))
+
+INSTALL_DIR ?= $(PWD)/dst
+INSTALL_BIN_DIR ?= $(INSTALL_DIR)/bin
+BUILD_DIR ?= $(PWD)
+OBJ_DIR = $(BUILD_DIR)/$(TARGET)/obj
+OBJS = $(CSRCS:.c=.o) 
+OBJS += $(CXXSRCS:.cpp=.o) 
+DST_OBJS = $(addprefix $(OBJ_DIR)/, $(OBJS))
+TARGET_FILE_NAME=$(TARGET)
+DST_TARGET = $(OBJ_DIR)/$(TARGET_FILE_NAME)
+
+.PRECIOUS: $(DST_OBJS)
+
+all:: $(DST_TARGET)
+
+$(DST_TARGET): $(TARGET_EXTRA_DEPS) $(DST_OBJS)
+	$(CC) $^ $(LDFLAGS) -o $@ 
+
+$(OBJ_DIR)/%.o: %.c
+	mkdir -p "$(OBJ_DIR)/`dirname $<`"
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJ_DIR)/%.o: %.cpp
+	mkdir -p "$(OBJ_DIR)/`dirname $<`"
+	$(CC) $(CXXFLAGS) -o $@ -c $<
+
+clean:
+	rm $(DST_OBJS) -f
+	rm $(DST_TARGET) -f
+
+install: $(DST_TARGET)
+	mkdir -p $(INSTALL_BIN_DIR)
+	cp $< $(INSTALL_BIN_DIR)

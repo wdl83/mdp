@@ -1,0 +1,28 @@
+services:
+  mdp:
+    platform: linux/amd64
+    tty: true
+    stdin_open: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+          USR: ${USR}
+          UID: ${UID}
+          GID: ${GID}
+          HOSTNAME: ${HOSTNAME}
+    user: ${UID}:${GID}
+    image: mdp:1.0
+    hostname: ${HOSTNAME}
+    container_name: mdp
+    environment:
+        - DISPLAY=${DISPLAY}
+        - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}
+    network_mode: host
+    volumes:
+        - ${PWD}/..:/home/${USR}/mdp
+        - ~/.vim:/home/${USR}/.vim
+        - ~/.vimrc:/home/${USR}/.vimrc
+        - /tmp/.X11-unix:/tmp/.X11-unix
+        - ~/.Xauthority:/home/${USR}/.Xauthority
+        - ${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}

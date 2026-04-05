@@ -1,0 +1,48 @@
+name: Linux release build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      UID: ${{ github.run_id }}
+      GID: ${{ github.run_id }}
+      USR: runner
+      WORKDIR: ${{ github.workspace }}
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Build Docker image
+      run: |
+        set -euo pipefail
+
+        docker build \
+          --platform linux/amd64 \
+          --build-arg USR="$USR" \
+          --build-arg UID="$UID" \
+          --build-arg GID="$GID" \
+          -f docker/Dockerfile \
+          -t mdp:1.0 .
+
+    - name: Run container and execute build.sh
+      run: |
+        set -euo pipefail
+
+        docker run --rm \
+          --platform linux/amd64 \
+          --name mdp \
+          -u "$UID:$GID" \
+          --mount type=bind,src="$WORKDIR",dst="/home/$USR/mdp" \
+          mdp:1.0 \
+          bash -lc "cd ~/mdp && make"

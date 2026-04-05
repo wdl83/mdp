@@ -1,0 +1,50 @@
+$(if $(TARGET),,$(error TARGET is not defined))
+
+VANILLA_TARGET=$(strip $(patsubst lib%, %, $(TARGET)))
+INSTALL_DIR ?= $(PWD)/dst
+INSTALL_INCLUDE_DIR ?= $(INSTALL_DIR)/include
+INSTALL_LIB_DIR ?= $(INSTALL_DIR)/lib
+BUILD_DIR ?= $(PWD)
+OBJ_DIR_a = $(BUILD_DIR)/$(TARGET)/obj.a
+
+OBJS = $(CSRCS:.c=.o) 
+OBJS += $(CXXSRCS:.cpp=.o) 
+DST_OBJS = $(addprefix $(OBJ_DIR_a)/, $(OBJS))
+TARGET_FILE_NAME=$(TARGET).a
+DST_TARGET = $(OBJ_DIR_a)/$(TARGET_FILE_NAME)
+
+CFLAGS += -fpic
+CXXFLAGS += -fpic
+
+.PRECIOUS: $(DST_OBJS)
+
+all:: $(DST_TARGET)
+
+$(DST_TARGET): $(TARGET_EXTRA_DEPS) $(DST_OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(OBJ_DIR_a)/%.o: %.c
+	mkdir -p "$(OBJ_DIR_a)/`dirname $<`"
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJ_DIR_a)/%.o: %.cpp
+	mkdir -p "$(OBJ_DIR_a)/`dirname $<`"
+	$(CC) $(CXXFLAGS) -o $@ -c $<
+
+install_headers:
+	mkdir -p $(INSTALL_INCLUDE_DIR)
+	[ -n "$(PUBLIC_HEADERS)" ] && cp -r $(PUBLIC_HEADERS) $(INSTALL_INCLUDE_DIR)
+
+install: $(DST_TARGET) install_headers
+	mkdir -p $(INSTALL_LIB_DIR)
+	cp $< $(INSTALL_LIB_DIR)
+
+clean:
+	rm $(DST_OBJS) -f
+	rm $(DST_TARGET) -f
+
+purge_headers:
+	[ -n "$(PUBLIC_HEADERS)" ] && rm $(INSTALL_INCLUDE_DIR)/$(PUBLIC_HEADERS) -rf
+
+purge: purge_headers
+	rm $(INSTALL_LIB_DIR)/$(TARGET_FILE_NAME) -f

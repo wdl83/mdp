@@ -1,0 +1,36 @@
+INSTALL_DIR ?= $(PWD)/install_dir
+BUILD_DIR ?= $(PWD)/build_dir
+
+FLAGS = \
+	-Wall \
+	-Werror \
+	-Wextra \
+	-Wfatal-errors \
+	-Wno-parentheses \
+	-Wno-unused-function \
+	-Wno-unused-parameter \
+	-Wno-unused-variable \
+	-Wsequence-point \
+	-Wshadow \
+	-Wswitch \
+	-Wunreachable-code \
+	-g \
+
+ifeq ($(DEBUG),1)
+FLAGS += -g -O0 -fsanitize=address
+LDFLAGS += -fsanitize=address
+else
+FLAGS += -O2 -lflto
+endif
+
+ifeq ($(ANALYZE),1)
+FLAGS += --analyze -Xanalyzer -analyzer-output=text
+endif
+
+CFLAGS = \
+	${FLAGS} \
+	-std=gnu11
+
+CXXFLAGS = \
+	${FLAGS} \
+	-std=c++17
