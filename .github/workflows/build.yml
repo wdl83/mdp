@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      UID: 1001
-      GID: 1001
       USR: runner
       WORKDIR: ${{ github.workspace }}
 
@@ -22,6 +20,11 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Get runner UID/GID
+      run: |
+        echo "UID=$(id -u)" >> $GITHUB_ENV
+        echo "GID=$(id -g)" >> $GITHUB_ENV
 
     - name: Build Docker image
       run: |
