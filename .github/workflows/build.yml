@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      UID: ${{ github.run_id }}
-      GID: ${{ github.run_id }}
+      UID: 1000
+      GID: 1000
       USR: runner
       WORKDIR: ${{ github.workspace }}
 
