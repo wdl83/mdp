@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <ctime>
 #include <map>
+#include <ostream>
 #include <string>
 #include <vector>
-#include <ostream>
 
 #include "ensure/Ensure.h"
 #include "ensure/Trace.h"
@@ -13,23 +13,21 @@
 #include "mdp/MutualHeartbeatMonitor.h"
 #include "mdp/ZMQIdentity.h"
 
-
 struct WorkerPool
 {
     struct Worker
     {
         enum class State
         {
-            begin, Idle = begin, Busy, end
+            begin,
+            Idle = begin,
+            Busy,
+            end
         };
 
-        friend
-        std::ostream &operator<< (std::ostream &os, const State &s)
+        friend std::ostream &operator<<(std::ostream &os, const State &s)
         {
-            static const char* name[] =
-            {
-                "idle", "busy"
-            };
+            static const char *name[] = {"idle", "busy"};
             os << (State::begin <= s && State::end > s ? name[int(s)] : "?");
             return os;
         }
@@ -39,57 +37,53 @@ struct WorkerPool
         ZMQIdentity identity_;
         MutualHeartbeatMonitor monitor_;
 
-        Worker(std::string serviceName, ZMQIdentity identity):
-            serviceName_{std::move(serviceName)},
-            state_{State::Idle},
-            identity_{std::move(identity)}
-        {}
+        Worker(std::string serviceName, ZMQIdentity identity)
+            : serviceName_{std::move(serviceName)}
+            , state_{State::Idle}
+            , identity_{std::move(identity)}
+        { }
 
-        friend
-        std::ostream &operator<< (std::ostream &os, const Worker &w)
+        friend std::ostream &operator<<(std::ostream &os, const Worker &w)
         {
-            os << w.identity_.asString() << ' ' << w.serviceName_ << ' ' << w.state_;
-                return os;
+            os << w.identity_.asString() << ' ' << w.serviceName_ << ' '
+               << w.state_;
+            return os;
         }
     };
 
-    using WorkerSeq = std::list<Worker>;
-    using ServiceName = std::string;
-    using ServiceMap = std::map<std::string, WorkerSeq>;
+    using WorkerSeq     = std::list<Worker>;
+    using ServiceName   = std::string;
+    using ServiceMap    = std::map<std::string, WorkerSeq>;
     using ServiceLookup = std::map<ZMQIdentity, std::string>;
 private:
     ServiceMap serviceMap_;
     ServiceLookup serviceLookup_;
 
-    static
-    WorkerSeq::iterator findWorker(WorkerSeq &workerSeq, const ZMQIdentity &identity)
+    static WorkerSeq::iterator
+    findWorker(WorkerSeq &workerSeq, const ZMQIdentity &identity)
     {
-        return
-            std::find_if(
-                std::begin(workerSeq), std::end(workerSeq),
-                [&](const Worker &worker)
-                {
-                    return worker.identity_ == identity;
-                });
+        return std::find_if(
+            std::begin(workerSeq), std::end(workerSeq),
+            [&](const Worker &worker) { return worker.identity_ == identity; });
     }
 public:
-    WorkerPool() = default;
-    WorkerPool(const WorkerPool &) = delete;
+    WorkerPool()                              = default;
+    WorkerPool(const WorkerPool &)            = delete;
     WorkerPool &operator=(const WorkerPool &) = delete;
 
     template <typename F>
     void forEachWorker(F f)
     {
-        for(auto &pair : serviceMap_)
+        for (auto &pair : serviceMap_)
         {
-            for(auto &worker : pair.second) f(worker);
+            for (auto &worker : pair.second)
+                f(worker);
         }
     }
 
     bool valid(const ServiceName &serviceName) const
     {
-        return
-            0 < serviceMap_.count(serviceName)
+        return 0 < serviceMap_.count(serviceName)
             && !serviceMap_.at(serviceName).empty();
     }
 
@@ -99,14 +93,13 @@ public:
 
         auto &workerSeq = serviceMap_[serviceName];
 
-        if(Worker::State::Idle != workerSeq.front().state_) return nullptr;
+        if (Worker::State::Idle != workerSeq.front().state_) return nullptr;
 
         /* round robin (if more then 1 worker in sequence) */
-        if(std::end(workerSeq) != std::next(std::begin(workerSeq)))
+        if (std::end(workerSeq) != std::next(std::begin(workerSeq)))
         {
             std::rotate(
-                std::begin(workerSeq),
-                std::next(std::begin(workerSeq)),
+                std::begin(workerSeq), std::next(std::begin(workerSeq)),
                 std::end(workerSeq));
         }
 
@@ -118,7 +111,7 @@ public:
         ENSURE(0 < serviceLookup_.count(identity), IdentityInvalid);
 
         const auto &serviceName = serviceLookup_.find(identity)->second;
-        auto &workerSeq = serviceMap_[serviceName];
+        auto &workerSeq         = serviceMap_[serviceName];
 
         return findWorker(workerSeq, identity);
     }
@@ -127,7 +120,9 @@ public:
     {
         auto &workerSeq = serviceMap_[serviceName];
 
-        ENSURE(workerSeq.end() == findWorker(workerSeq, identity), WorkerDuplicate);
+        ENSURE(
+            workerSeq.end() == findWorker(workerSeq, identity),
+            WorkerDuplicate);
 
         workerSeq.emplace_back(serviceName, identity);
 
@@ -142,11 +137,11 @@ public:
         ENSURE(0 < serviceLookup_.count(identity), IdentityInvalid);
 
         const auto &serviceName = serviceLookup_.find(identity)->second;
-        auto &workerSeq = serviceMap_[serviceName];
+        auto &workerSeq         = serviceMap_[serviceName];
 
         workerSeq.erase(findWorker(workerSeq, identity));
         const auto num = workerSeq.size();
-        if(workerSeq.empty()) serviceMap_.erase(serviceName);
+        if (workerSeq.empty()) serviceMap_.erase(serviceName);
         // WARNING: workerSeq ref invalid
         serviceLookup_.erase(identity);
         return num;
@@ -155,11 +150,9 @@ public:
     void dumpState(TraceLevel level)
     {
         uint64_t no = 0;
-        forEachWorker(
-            [&](const WorkerPool::Worker &worker)
-            {
-                TRACE(level, "worker[", no, "] ", worker);
-                ++no;
-            });
+        forEachWorker([&](const WorkerPool::Worker &worker) {
+            TRACE(level, "worker[", no, "] ", worker);
+            ++no;
+        });
     }
 };

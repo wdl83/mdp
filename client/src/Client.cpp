@@ -13,12 +13,12 @@ auto Client::exec(
         onRequest(MDP::Client::makeReq(serviceName, payloadSeq), zmqContext);
         return onReply(onMessage(zmqContext.recv(), zmqContext, serviceName));
     }
-    catch(const std::exception &except)
+    catch (const std::exception &except)
     {
         TRACE(TraceLevel::Error, this, " ", except.what(), " aborting");
         return {};
     }
-    catch(...)
+    catch (...)
     {
         TRACE(TraceLevel::Error, this, " Unsupported exception, aborting");
         return {};
@@ -34,9 +34,7 @@ void Client::onRequest(Message message, ZMQContext &zmqContext)
 }
 
 auto Client::onMessage(
-    Message msg,
-    const ZMQContext &,
-    const std::string &serviceName) -> Message
+    Message msg, const ZMQContext &, const std::string &serviceName) -> Message
 {
     ENSURE(4 <= msg.parts(), MessageFormatInvalid);
     /* Frame 0: empty */
@@ -51,12 +49,13 @@ auto Client::onMessage(
     return msg;
 }
 
-auto Client::onReply(Message message) ->PayloadSeq
+auto Client::onReply(Message message) -> PayloadSeq
 {
     TRACE(TraceLevel::Debug, this, " ", message);
 
     PayloadSeq seq;
 
-    for(size_t i = 3; i < message.parts(); ++i) seq.push_back(message.get(i));
+    for (size_t i = 3; i < message.parts(); ++i)
+        seq.push_back(message.get(i));
     return seq;
 }

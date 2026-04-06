@@ -1,0 +1,52 @@
+---
+AccessModifierOffset: -4
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros: true
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: True
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLambdasOnASingleLine: All
+AlwaysBreakTemplateDeclarations: Yes
+BasedOnStyle: WebKit
+BinPackParameters: false
+BreakBeforeBraces: Custom
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 80
+CompactNamespaces: true 
+Cpp11BracedListStyle: true
+EmptyLineBeforeAccessModifier: Never
+FixNamespaceComments: true
+IndentExternBlock: NoIndent
+IndentPPDirectives: BeforeHash
+IndentWidth: 4
+Language: Cpp
+NamespaceIndentation: None
+PointerAlignment: Right
+ShortNamespaceLines: 0
+SortIncludes: true
+SpaceBeforeCpp11BracedList : False
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyBlock: True
+SpaceInEmptyParentheses: False
+Standard: Auto
+UseTab: Never
+BraceWrapping:
+  AfterCaseLabel:        true
+  AfterClass:            true
+  AfterControlStatement: Always
+  AfterEnum:             true
+  AfterExternBlock:      true
+  AfterFunction:         true
+  AfterNamespace:        false
+  AfterObjCDeclaration:  true
+  AfterStruct:           true
+  AfterUnion:            true
+  BeforeCatch:           true
+  BeforeElse:            true
+  IndentBraces:          false
+  SplitEmptyFunction:    false
+  SplitEmptyNamespace:   false
+  SplitEmptyRecord:      false

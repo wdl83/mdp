@@ -5,15 +5,14 @@
 #include "mdp/WorkerTask.h"
 #include "mdp/ZMQWorkerContext.h"
 
-
 class Worker
 {
-    using Message = MDP::Message;
+    using Message       = MDP::Message;
     using MessageHandle = MDP::MessageHandle;
-    using ZMQContext = ZMQWorkerContext;
+    using ZMQContext    = ZMQWorkerContext;
 
-    static
-    constexpr std::chrono::milliseconds timeout = MutualHeartbeatMonitor::period;
+    static constexpr std::chrono::milliseconds timeout
+        = MutualHeartbeatMonitor::period;
 public:
     void exec(
         const std::string &address,
@@ -38,9 +37,13 @@ private:
 
         MessageHandle handle;
 
-        Tagged() {}
-        Tagged(MessageHandle h): handle{std::move(h)} {}
-        Tagged(Message m): handle{MDP::makeMessageHandle(std::move(m))} {}
+        Tagged() { }
+        Tagged(MessageHandle h)
+            : handle{std::move(h)}
+        { }
+        Tagged(Message m)
+            : handle{MDP::makeMessageHandle(std::move(m))}
+        { }
     };
 
     void exec(ZMQContext &, const std::string &);

@@ -18,14 +18,13 @@
 #include "mdp/ZMQBrokerContext.h"
 #include "mdp/ZMQIdentity.h"
 
-
 struct Broker
 {
-    static
-    constexpr std::chrono::milliseconds timeout = MutualHeartbeatMonitor::period;
+    static constexpr std::chrono::milliseconds timeout
+        = MutualHeartbeatMonitor::period;
 
-    using MessageHandle = MDP::MessageHandle;
-    using ZMQContext = ZMQBrokerContext;
+    using MessageHandle    = MDP::MessageHandle;
+    using ZMQContext       = ZMQBrokerContext;
     using ZMQContextHandle = std::unique_ptr<ZMQContext>;
 
     enum class Tag
@@ -47,9 +46,13 @@ struct Broker
 
         MessageHandle handle;
 
-        Tagged() {}
-        Tagged(MessageHandle h): handle{std::move(h)} {}
-        Tagged(zmqpp::message m): handle{MDP::makeMessageHandle(std::move(m))} {}
+        Tagged() { }
+        Tagged(MessageHandle h)
+            : handle{std::move(h)}
+        { }
+        Tagged(zmqpp::message m)
+            : handle{MDP::makeMessageHandle(std::move(m))}
+        { }
     };
 
     void exec(const std::string &address);
@@ -66,7 +69,10 @@ private:
     void dispatch(Tagged<Tag::ClientReply>);
     /* Worker */
     void dispatch(Tagged<Tag::WorkerReady>);
-    void dispatch(Tagged<Tag::WorkerRequest>, WorkerPool::Worker &, ZMQIdentity clientIdentity);
+    void dispatch(
+        Tagged<Tag::WorkerRequest>,
+        WorkerPool::Worker &,
+        ZMQIdentity clientIdentity);
     void dispatch(Tagged<Tag::WorkerReply>);
     void dispatch(Tagged<Tag::WorkerHeartbeat>);
     void dispatch(Tagged<Tag::WorkerDisconnect>);

@@ -8,10 +8,9 @@
 #include "mdp/MDP.h"
 #include "mdp/ZMQIdentity.h"
 
-
 struct ZMQClientContext
 {
-    using Message = MDP::Message;
+    using Message       = MDP::Message;
     using MessageHandle = MDP::MessageHandle;
 private:
     zmqpp::context context_;
@@ -22,5 +21,5 @@ public:
     ZMQClientContext(ZMQIdentity identity, std::string address);
     Message recv();
     void send(Message);
-    const ZMQIdentity &identity() const {return identity_;}
+    const ZMQIdentity &identity() const { return identity_; }
 };

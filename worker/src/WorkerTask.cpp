@@ -1,7 +1,7 @@
+#include "mdp/WorkerTask.h"
 #include "ensure/Ensure.h"
 #include "mdp/Except.h"
 #include "mdp/MDP.h"
-#include "mdp/WorkerTask.h"
 #include "mdp/utils.h"
 
 WorkerTask::MasterGuard::~MasterGuard()
@@ -20,7 +20,7 @@ void WorkerTask::operator()(zmqpp::socket &socket)
 {
     SlaveGuard guard{socket};
 
-    for(;;)
+    for (;;)
     {
         zmqpp::message request;
 
@@ -29,7 +29,7 @@ void WorkerTask::operator()(zmqpp::socket &socket)
 
             ENSURE(status, RecvFailed);
 
-            if(1 == request.parts() && "exit" == request.get(0)) return;
+            if (1 == request.parts() && "exit" == request.get(0)) return;
         }
 
         ASSERT(5 <= request.parts());

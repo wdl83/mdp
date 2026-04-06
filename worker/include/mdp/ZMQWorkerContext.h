@@ -8,7 +8,6 @@
 #include "mdp/MDP.h"
 #include "mdp/ZMQIdentity.h"
 
-
 struct ZMQWorkerContext
 {
     zmqpp::context context_;

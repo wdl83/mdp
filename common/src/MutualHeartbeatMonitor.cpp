@@ -1,4 +1,3 @@
 #include "mdp/MutualHeartbeatMonitor.h"
 
-constexpr
-std::chrono::milliseconds MutualHeartbeatMonitor::period;
+constexpr std::chrono::milliseconds MutualHeartbeatMonitor::period;

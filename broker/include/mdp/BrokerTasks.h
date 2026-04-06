@@ -7,7 +7,6 @@
 #include "mdp/WorkerPool.h"
 #include "mdp/ZMQIdentity.h"
 
-
 struct BrokerTasks
 {
     using WorkerIterator = WorkerPool::WorkerSeq::iterator;
@@ -17,16 +16,16 @@ struct BrokerTasks
         WorkerIterator workerIterator_;
         ZMQIdentity clientIdentity_;
 
-        TaskInfo(WorkerIterator workerIterator, ZMQIdentity clientIdentity):
-            workerIterator_{workerIterator},
-            clientIdentity_{clientIdentity}
-        {}
+        TaskInfo(WorkerIterator workerIterator, ZMQIdentity clientIdentity)
+            : workerIterator_{workerIterator}
+            , clientIdentity_{clientIdentity}
+        { }
 
-        TaskInfo(const TaskInfo &) = delete;
-        TaskInfo &operator= (const TaskInfo &) = delete;
+        TaskInfo(const TaskInfo &)            = delete;
+        TaskInfo &operator=(const TaskInfo &) = delete;
 
-        TaskInfo(TaskInfo &&) = default;
-        TaskInfo &operator= (TaskInfo &&) = default;
+        TaskInfo(TaskInfo &&)            = default;
+        TaskInfo &operator=(TaskInfo &&) = default;
     };
 
     using TaskInfoMap = std::map<ZMQIdentity, TaskInfo>;
@@ -40,12 +39,13 @@ public:
 
     void append(WorkerIterator workerIterator, ZMQIdentity clientIdentity)
     {
-        ENSURE(0 == taskInfoMap_.count(workerIterator->identity_), WorkerDuplicate);
+        ENSURE(
+            0 == taskInfoMap_.count(workerIterator->identity_),
+            WorkerDuplicate);
 
-        taskInfoMap_.emplace(
-            std::make_pair(
-                workerIterator->identity_,
-                TaskInfo{workerIterator, clientIdentity}));
+        taskInfoMap_.emplace(std::make_pair(
+            workerIterator->identity_,
+            TaskInfo{workerIterator, clientIdentity}));
     }
 
     void remove(const ZMQIdentity &workerIdentity)

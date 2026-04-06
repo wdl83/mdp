@@ -7,7 +7,6 @@
 
 #include "mdp/ZMQIdentity.h"
 
-
 struct ZMQBrokerContext
 {
     zmqpp::context context_;

@@ -11,9 +11,9 @@ using json = nlohmann::json;
 
 void help()
 {
-    std::cout
-        << "client -a broker_address -s service_name -i [input.json|-] [-o output]"
-        << std::endl;
+    std::cout << "client -a broker_address -s service_name -i [input.json|-] "
+                 "[-o output]"
+              << std::endl;
 }
 
 int main(int argc, char *const argv[])
@@ -23,35 +23,25 @@ int main(int argc, char *const argv[])
     std::string iname;
     std::string oname;
 
-    for(int c; -1 != (c = ::getopt(argc, argv, "ha:s:i:"));)
+    for (int c; -1 != (c = ::getopt(argc, argv, "ha:s:i:"));)
     {
-        switch(c)
+        switch (c)
         {
-            case 'h':
-                help();
-                return EXIT_SUCCESS;
-                break;
-            case 'a':
-                address = optarg ? optarg : "";
-                break;
-            case 's':
-                serviceName = optarg ? optarg : "";
-                break;
-            case 'i':
-                iname = optarg ? optarg : "";
-                break;
-            case 'o':
-                oname = optarg ? optarg : "";
-                break;
-            case ':':
-            case '?':
-            default:
-                return EXIT_FAILURE;
-                break;
+        case 'h':
+            help();
+            return EXIT_SUCCESS;
+            break;
+        case 'a': address = optarg ? optarg : ""; break;
+        case 's': serviceName = optarg ? optarg : ""; break;
+        case 'i': iname = optarg ? optarg : ""; break;
+        case 'o': oname = optarg ? optarg : ""; break;
+        case ':':
+        case '?':
+        default: return EXIT_FAILURE; break;
         }
     }
 
-    if(address.empty() || serviceName.empty() || iname.empty())
+    if (address.empty() || serviceName.empty() || iname.empty())
     {
         help();
         return EXIT_FAILURE;
@@ -61,7 +51,7 @@ int main(int argc, char *const argv[])
     {
         json input;
 
-        if("-" == iname) std::cin >> input;
+        if ("-" == iname) std::cin >> input;
         else std::ifstream{iname} >> input;
 
         Client::PayloadSeq payloadSeq;
@@ -80,18 +70,18 @@ int main(int argc, char *const argv[])
 
         ++begin;
 
-        if(std::end(reply) == begin) goto exit;
+        if (std::end(reply) == begin) goto exit;
 
-        if(oname.empty())
+        if (oname.empty())
         {
             std::cout << '[';
 
-            for(;begin != std::end(reply);)
+            for (; begin != std::end(reply);)
             {
                 std::cout << *begin;
                 ++begin;
 
-                if(begin != std::end(reply)) std::cout << ',';
+                if (begin != std::end(reply)) std::cout << ',';
             }
             std::cout << ']';
         }
@@ -101,20 +91,20 @@ int main(int argc, char *const argv[])
 
             ofile << '[';
 
-            for(;begin != std::end(reply);)
+            for (; begin != std::end(reply);)
             {
                 ofile << *begin;
-                if(begin != std::end(reply)) ofile << ',';
+                if (begin != std::end(reply)) ofile << ',';
             }
             ofile << ']';
         }
     }
-    catch(const std::exception &except)
+    catch (const std::exception &except)
     {
         TRACE(TraceLevel::Error, except.what());
         return EXIT_FAILURE;
     }
-    catch(...)
+    catch (...)
     {
         TRACE(TraceLevel::Error, "unsupported exception");
         return EXIT_FAILURE;
