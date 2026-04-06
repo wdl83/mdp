@@ -14,41 +14,40 @@ Dependencies
 sudo apt-get install nlohmann-json3-dev libzmq3-dev
 ```
 
-Building
---------
+Building with make
+------------------
 
 ```console
 git clone --recurse-submodules https://github.com/wdl83/mdp
 cd mdp 
-RELEASE=1 make
+make install
 ```
-Build artifacts will be placed in 'obj' dir, if you have not defined OBJ_DIR.
+Build artifacts will be placed in 'install_dir' dir.
 
-Installing
-----------
 
-DST_DIR variable can be used to define prefix (must be absolute) path for:
-
-1. $DST_DIR/bin
-1. $DST_DIR/lib // zmqpp
-1. $DST_DIR/include // zmqpp
+Building with CMake
+------------------
 
 ```console
-RELEASE=1 DST_DIR=$HOME/opt make install
+git clone --recurse-submodules https://github.com/wdl83/mdp
+cd mdp 
+./buld_rel.sh build_dir install_dir
 ```
+Build artifacts will be placed in 'install_dir' dir.
 
-Building with Docker
---------------------
+
+Docker build environment
+------------------------
 
 ```console
 git clone https://github.com/wdl83/mdp
-cd mdp 
+cd mdp/docker
 ./make_env.sh # generate .env
-sudo docker-compose up
-grep DST= .env # directory where artifacts are located
+docker-compose up mpd --detach
+docker exec -it mdp /bin/bash -l
+```
 
-````
-Build artifacts will be placed in $DST dir (generated with mktemp -d).
+Follow build instruction listed above.
 
 Usage
 -----
