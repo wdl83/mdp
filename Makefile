@@ -4,6 +4,7 @@ include $(MAKE_UTILS)/Makefile.defs
 
 export INSTALL_DIR
 export INSTALL_INCLUDE_DIR := $(INSTALL_DIR)/include
+export INSTALL_BIN_DIR := $(INSTALL_DIR)/bin
 export INSTALL_LIB_DIR := $(INSTALL_DIR)/lib
 export BUILD_DIR
 CFLAGS += \
@@ -22,6 +23,8 @@ export LDFLAGS
 
 all: purge clean_zmqpp build_broker build_client build_echo_worker
 install: purge clean_zmqpp install_broker install_client install_echo_worker
+run_all_tests: install_common_tests
+	LD_LIBRARY_PATH=$(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR)/test_mdp_common
 
 # BEGIN DEPS: zmqpp library ---------------------------------------------------#
 clean_zmqpp: 
@@ -80,6 +83,14 @@ build_echo_worker: install_libcommon install_libworker
 install_echo_worker: build_echo_worker
 	make install -C apps/echo_worker
 # END APPS --------------------------------------------------------------------#
+
+# BEGIN UTs -------------------------------------------------------------------#
+build_common_tests: install_libcommon
+	make -C tests/UTs/common
+
+install_common_tests: build_common_tests
+	make install -C tests/UTs/common
+# END UTs ---------------------------------------------------------------------#
 
 clean:
 	rm $(BUILD_DIR) -rf

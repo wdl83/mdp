@@ -9,6 +9,7 @@ CXXFLAGS += \
 
 CXXSRCS = \
 	src/MutualHeartbeatMonitor.cpp \
-	src/ZMQIdentity.cpp
+	src/ZMQIdentity.cpp \
+	src/utils.cpp
 
 include $(MAKE_UTILS)/Makefile.a_rules
