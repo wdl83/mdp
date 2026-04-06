@@ -11,8 +11,6 @@ class Worker
     using MessageHandle = MDP::MessageHandle;
     using ZMQContext    = ZMQWorkerContext;
 
-    static constexpr std::chrono::milliseconds timeout
-        = MutualHeartbeatMonitor::period;
 public:
     void exec(
         const std::string &address,

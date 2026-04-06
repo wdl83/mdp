@@ -4,6 +4,7 @@ add_library(
     ${PROJECT_NAME} STATIC
     src/MutualHeartbeatMonitor.cpp
     src/ZMQIdentity.cpp
+    src/utils.cpp
 )
 
 target_include_directories(

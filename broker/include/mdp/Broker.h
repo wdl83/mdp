@@ -20,8 +20,6 @@
 
 struct Broker
 {
-    static constexpr std::chrono::milliseconds timeout
-        = MutualHeartbeatMonitor::period;
 
     using MessageHandle    = MDP::MessageHandle;
     using ZMQContext       = ZMQBrokerContext;
@@ -55,11 +53,13 @@ struct Broker
         { }
     };
 
+    Broker(std::chrono::milliseconds timeout = std::chrono::seconds{3});
     void exec(const std::string &address);
 private:
-    ZMQContextHandle zmqContextHandle_;
-    WorkerPool workerPool_;
-    BrokerTasks brokerTasks_;
+    std::chrono::milliseconds timeout_;
+    ZMQContextHandle zmqContextHandle_{};
+    WorkerPool workerPool_{};
+    BrokerTasks brokerTasks_{};
 
     void onMessage(MessageHandle);
     void onClientMessage(MessageHandle);

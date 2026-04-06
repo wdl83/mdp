@@ -15,7 +15,10 @@ RUN apt-get -y install --no-install-recommends \
     dumb-init \
     g++ \
     git \
+    google-mock \
+    googletest \
     htop \
+    libgtest-dev \
     libzmq3-dev \
     make \
     nlohmann-json3-dev \

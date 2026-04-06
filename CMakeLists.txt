@@ -35,27 +35,8 @@ endif()
 
 add_definitions(-DENABLE_TRACE)
 
-# Find ZMQ
-#find_library(ZMQ_LIB NAMES zmq REQUIRED)
-#find_path(ZMQ_INCLUDE_DIR NAMES zmq.h REQUIRED)
-
-#set(
-#    ZMQPP_INCLUDE_DIR
-#    "${CMAKE_SOURCE_DIR}/modules/zmqpp/src"
-#)
-#set(
-#    ZMQPP_LIB
-#    "${CMAKE_SOURCE_DIR}/modules/zmqpp/build/max-g++/libzmqpp.a"
-#)
-#
-#add_library(zmqpp STATIC IMPORTED)
-#set_target_properties(
-#    zmqpp
-#    PROPERTIES
-#        IMPORTED_LOCATION "${ZMQPP_LIB}"
-#        INTERFACE_INCLUDE_DIRECTORIES "${ZMQPP_INCLUDE_DIR}"
-#        INTERFACE_LINK_LIBRARIES "${ZMQ_LIB}"
-#)
+include (CTest)
+find_package(GTest REQUIRED)
 
 add_library(ensure INTERFACE)
 target_include_directories(ensure INTERFACE "${CMAKE_SOURCE_DIR}/modules")
@@ -66,3 +47,12 @@ add_subdirectory(worker)
 add_subdirectory(client)
 add_subdirectory(apps)
 add_subdirectory(modules/zmqpp)
+add_subdirectory(tests)
+
+if(BUILD_TESTING)
+add_custom_target(
+    run_all_tests
+    COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --output-on-failure
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+endif(BUILD_TESTING)

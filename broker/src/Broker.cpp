@@ -5,7 +5,9 @@
 #include "mdp/ZMQIdentity.h"
 #include "mdp/utils.h"
 
-constexpr std::chrono::milliseconds Broker::timeout;
+Broker::Broker(std::chrono::milliseconds timeout)
+    : timeout_{timeout}
+{ }
 
 void Broker::exec(const std::string &address)
 {
@@ -21,7 +23,7 @@ void Broker::exec(const std::string &address)
         {
             for (;;)
             {
-                if (zmqContextHandle_->poller_.poll(timeout.count()))
+                if (zmqContextHandle_->poller_.poll(timeout_.count()))
                 {
                     if (zmqContextHandle_->poller_.has_input(
                             zmqContextHandle_->socket_))

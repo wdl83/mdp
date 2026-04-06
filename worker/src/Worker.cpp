@@ -23,8 +23,6 @@ struct Guard
 
 } /* namespace */
 
-constexpr std::chrono::milliseconds Worker::timeout;
-
 void Worker::exec(
     const std::string &address,
     const std::string &serviceName,
@@ -81,7 +79,7 @@ void Worker::provideService(
         TRACE(
             TraceLevel::Trace, this, ' ', serviceName, " [", cntr, "] waiting");
 
-        if (zmqContext.poller_.poll(timeout.count()))
+        if (zmqContext.poller_.poll(monitor_.period().count()))
         {
             if (zmqContext.poller_.has_input(zmqContext.socket_))
             {
