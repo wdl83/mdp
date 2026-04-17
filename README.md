@@ -116,6 +116,16 @@ Inside the container follow the Make or CMake instructions above.
 
 ## Usage
 
+Install into `$HOME/.local` so binaries land on the default user `PATH`:
+
+```console
+# Make
+make install INSTALL_DIR=$HOME/.local
+
+# CMake
+./build_rel.sh build_dir $HOME/.local
+```
+
 ### Running the Broker
 
 ```console
@@ -132,8 +142,7 @@ Description=MDP Broker
 
 [Service]
 Environment=TRACE_LEVEL=2
-Environment=LD_LIBRARY_PATH=$HOME/lib/:$LD_LIBRARY_PATH
-ExecStart=$HOME/bin/broker -a tcp://0.0.0.0:6060
+ExecStart=%h/.local/bin/broker -a tcp://0.0.0.0:6060
 Restart=on-failure
 RestartSec=10s
 
@@ -141,11 +150,29 @@ RestartSec=10s
 WantedBy=default.target
 ```
 
-Enable and start the service:
+Create `~/.config/systemd/user/echo-worker.service`:
+
+```ini
+[Unit]
+Description=MDP Echo Worker
+After=broker.service
+Requires=broker.service
+
+[Service]
+Environment=TRACE_LEVEL=2
+ExecStart=%h/.local/bin/worker -a tcp://localhost:6060 -s echo
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=default.target
+```
+
+Enable and start both services:
 
 ```console
-systemctl --user enable broker.service
-systemctl --user start broker.service
+systemctl --user enable broker.service echo-worker.service
+systemctl --user start broker.service echo-worker.service
 ```
 
 To start user services at boot without login:
