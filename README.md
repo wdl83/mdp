@@ -1,9 +1,8 @@
-Majordomo Protocol Broker, Client and Worker
-==============================================================
+# Majordomo Protocol — Broker, Client and Worker
 
 ## Overview
 
-This is an implementation of the
+Implementation of the
 [Majordomo Protocol (MDP/RFC 7)](https://rfc.zeromq.org/spec:7/MDP) —
 a reliable, service-oriented request-reply pattern built on
 [ZeroMQ](http://zeromq.org).
@@ -16,6 +15,7 @@ are detected and evicted within 9 seconds; clients receive an explicit
 failure reply rather than hanging indefinitely.
 
 Key characteristics:
+
 - **Service discovery**: workers advertise named services at runtime;
   clients address services by name, not by worker address.
 - **Load balancing**: idle workers for a service are selected round-robin.
@@ -26,98 +26,107 @@ Key characteristics:
 - **Horizontal scaling**: multiple workers may register for the same
   service; add workers without restarting broker or clients.
 
-## Main Components
+## Components
 
 | Component | Role |
 |-----------|------|
-| **broker** | Central ROUTER; maintains worker registry (`WorkerPool`),
-tracks in-flight tasks (`BrokerTasks`), enforces heartbeating. |
+| **broker** | Central ROUTER; maintains worker registry, tracks
+in-flight tasks, enforces heartbeating. |
 | **worker** | DEALER; registers for a named service, processes requests
-in a background task thread, returns replies. Reconnects on broker failure. |
-| **client** | DEALER; sends a single blocking request and waits for the
-reply. Stateless and ephemeral. |
-| **common** | Shared protocol constants (`MDP.h`), message factories,
-`ZMQIdentity`, `MutualHeartbeatMonitor`, and I/O helpers. |
+in a background task thread, returns replies. Reconnects on failure. |
+| **client** | DEALER; sends a single blocking request and waits for
+the reply. Stateless and ephemeral. |
+| **common** | Shared protocol constants, message factories, heartbeat
+monitor, identity helpers, and I/O utilities. |
 | **apps/broker** | `broker` daemon — bind address set with `-a`. |
-| **apps/client** | `client` CLI — reads JSON from file/stdin, prints or
-saves JSON reply. |
+| **apps/client** | `client` CLI — reads JSON from file/stdin, prints
+or saves JSON reply. |
 | **apps/echo_worker** | Example `worker` that echoes input unchanged. |
 
 ## Diagrams
 
-### Component Diagram
+### Component
+
 ![Component diagram](diagrams/component.png)
 
-### Detailed Request / Reply Sequence
+### Request / Reply Sequence
+
 ![Request sequence](diagrams/sequence_request.png)
 
 ### Heartbeat and Failure Sequence
+
 ![Heartbeat sequence](diagrams/sequence_heartbeat.png)
 
+## Dependencies
 
-Dependencies
-------------
-1. [zmq library](http://zeromq.org)
-1. [zmqpp: zmq library c++ wrapper](https://github.com/zeromq/zmqpp)
-1. [json c++ library](https://github.com/nlohmann/json)
+Install system packages (Debian/Ubuntu):
 
 ```console
-# Debian based
 sudo apt-get install nlohmann-json3-dev libzmq3-dev
 ```
 
-Building with make
-------------------
+Third-party libraries used:
+
+1. [ZeroMQ](http://zeromq.org)
+2. [zmqpp — ZMQ C++ wrapper](https://github.com/zeromq/zmqpp)
+   (included as a submodule)
+3. [nlohmann/json](https://github.com/nlohmann/json)
+
+## Building
+
+Start by cloning the repository with all submodules:
 
 ```console
 git clone --recurse-submodules https://github.com/wdl83/mdp
-cd mdp 
+cd mdp
+```
+
+Then choose one of the build methods below.
+
+### Make
+
+```console
 make install
 ```
-Build artifacts will be placed in 'install_dir' dir.
 
+Binaries and libraries are installed into `./install_dir/`.
+Override with `make install INSTALL_DIR=/your/path`.
 
-Building with CMake
-------------------
+### CMake
 
 ```console
-git clone --recurse-submodules https://github.com/wdl83/mdp
-cd mdp 
-./buld_rel.sh build_dir install_dir
+./build_rel.sh build_dir install_dir
 ```
-Build artifacts will be placed in 'install_dir' dir.
 
+Binaries and libraries are installed into `./install_dir/`.
+For a debug build use `./build_dbg.sh` instead.
 
-Docker build environment
-------------------------
+### Docker
+
+Start a build container:
 
 ```console
-git clone https://github.com/wdl83/mdp
-cd mdp/docker
-./make_env.sh # generate .env
-docker-compose up mpd --detach
+cd docker
+./make_env.sh
+docker-compose up mdp --detach
 docker exec -it mdp /bin/bash -l
 ```
 
-Follow build instruction listed above.
+Inside the container follow the Make or CMake instructions above.
 
-Usage
------
-Broker requires the IP address and listen port.
-Running manually from console:
+## Usage
+
+### Running the Broker
 
 ```console
 broker -a tcp://0.0.0.0:6060
 ```
 
-or better as systemd service.
-Create .config/systemd/user/broker.service
+### Running as a systemd Service
 
-```cosnole
-# this config assumes you installed:
-# broker in $HOME/bin
-# libzmqpp.so* libraries in $HOME/lib
-#
+Create `~/.config/systemd/user/broker.service`:
+
+```ini
 [Unit]
 Description=MDP Broker
 
@@ -132,19 +141,14 @@ RestartSec=10s
 WantedBy=default.target
 ```
 
-After systemd service file is created enable it:
+Enable and start the service:
 
 ```console
 systemctl --user enable broker.service
-```
-
-and start
-
-```console
 systemctl --user start broker.service
 ```
 
-Enable systemd to start $USER services at boot (no $USER login required)
+To start user services at boot without login:
 
 ```console
 loginctl enable-linger $USER
