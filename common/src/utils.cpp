@@ -37,7 +37,7 @@ std::string asHex(const uint8_t *begin, const uint8_t *const end)
 
     const auto len = std::distance(begin, end);
 
-    std::string r((len << 1) + 1, '\0');
+    std::string r(len << 1, '\0');
 
     for (auto i = 0u; i < len; ++i)
     {

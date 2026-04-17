@@ -23,7 +23,7 @@ int main(int argc, char *const argv[])
     std::string iname;
     std::string oname;
 
-    for (int c; -1 != (c = ::getopt(argc, argv, "ha:s:i:"));)
+    for (int c; -1 != (c = ::getopt(argc, argv, "ha:s:i:o:"));)
     {
         switch (c)
         {
@@ -94,6 +94,7 @@ int main(int argc, char *const argv[])
             for (; begin != std::end(reply);)
             {
                 ofile << *begin;
+                ++begin;
                 if (begin != std::end(reply)) ofile << ',';
             }
             ofile << ']';
