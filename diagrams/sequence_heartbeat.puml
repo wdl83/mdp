@@ -1,0 +1,61 @@
+@startuml sequence_heartbeat
+
+title MDP Heartbeat, Worker Failure & Recovery Sequence
+
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 5
+skinparam backgroundColor #FEFEFE
+
+participant "Client\n(DEALER)" as C
+participant "Broker\n(ROUTER)" as B
+participant "WorkerPool" as WP
+participant "Worker\n(DEALER)" as W
+
+== Normal Heartbeat Exchange (continuous, every 3 s) ==
+
+loop every ~3 seconds (period)
+    B -> W : [Empty | "MDPW01" | 0x04 HEARTBEAT]
+    W -> B : [Empty | "MDPW01" | 0x04 HEARTBEAT]
+    note right of B : peerTimestamp reset\n(9 s window restarted)
+    note left of W : peerTimestamp reset\n(9 s window restarted)
+end
+
+== Worker Graceful Disconnect ==
+
+W -> B : [Empty | "MDPW01" | 0x05 DISCONNECT]
+B -> WP : remove(workerId)
+
+== Worker Crash / Network Failure ==
+
+...Worker stops responding...
+
+loop broker polling (every period ms timeout)
+    B -> B : checkExpired()\npeerDiff() > 3 × period (9 s)?
+end
+
+note over B : peerHeartbeatExpired() == true\nafter 9 s of silence
+
+B -> W : [Empty | "MDPW01" | 0x05 DISCONNECT]
+B -> WP : purge(workerId)
+
+alt Worker had an in-flight task
+    B -> C : [Empty | "MDPC01" | serviceName | "failure" | "worker failure"]
+end
+
+== Worker Reconnection & Re-registration ==
+
+W -> W : catch BrokerHeartbeatExpired\nrestart exec() loop
+
+W -> B : [Empty | "MDPW01" | 0x01 READY | serviceName]
+B -> WP : append(workerId, serviceName)\nstate = Idle
+note over B, W : Heartbeat exchange resumes
+
+== Broker Sends Disconnect to Worker ==
+
+B -> W : [Empty | "MDPW01" | 0x05 DISCONNECT]
+W -> W : catch BrokerDisconnected\nrestart exec() loop
+
+W -> B : [Empty | "MDPW01" | 0x01 READY | serviceName]
+B -> WP : append(workerId, serviceName)\nstate = Idle
+
+@enduml

@@ -1,7 +1,59 @@
 Majordomo Protocol Broker, Client and Worker
 ==============================================================
 
-[Majordomo Protocol](https://rfc.zeromq.org/spec:7/MDP)
+## Overview
+
+This is an implementation of the
+[Majordomo Protocol (MDP/RFC 7)](https://rfc.zeromq.org/spec:7/MDP) —
+a reliable, service-oriented request-reply pattern built on
+[ZeroMQ](http://zeromq.org).
+
+The system provides a **message broker** that routes client requests to
+registered workers by service name. Workers register themselves for named
+services, process requests in a dedicated task thread, and return replies.
+The broker enforces reliability through mutual heartbeating: dead workers
+are detected and evicted within 9 seconds; clients receive an explicit
+failure reply rather than hanging indefinitely.
+
+Key characteristics:
+- **Service discovery**: workers advertise named services at runtime;
+  clients address services by name, not by worker address.
+- **Load balancing**: idle workers for a service are selected round-robin.
+- **Fault detection**: broker and workers exchange heartbeats every 3 s;
+  absence for 9 s triggers disconnection and client notification.
+- **Opaque payload**: message bodies are binary-safe — JSON, protobuf,
+  or any other format can be used.
+- **Horizontal scaling**: multiple workers may register for the same
+  service; add workers without restarting broker or clients.
+
+## Main Components
+
+| Component | Role |
+|-----------|------|
+| **broker** | Central ROUTER; maintains worker registry (`WorkerPool`),
+tracks in-flight tasks (`BrokerTasks`), enforces heartbeating. |
+| **worker** | DEALER; registers for a named service, processes requests
+in a background task thread, returns replies. Reconnects on broker failure. |
+| **client** | DEALER; sends a single blocking request and waits for the
+reply. Stateless and ephemeral. |
+| **common** | Shared protocol constants (`MDP.h`), message factories,
+`ZMQIdentity`, `MutualHeartbeatMonitor`, and I/O helpers. |
+| **apps/broker** | `broker` daemon — bind address set with `-a`. |
+| **apps/client** | `client` CLI — reads JSON from file/stdin, prints or
+saves JSON reply. |
+| **apps/echo_worker** | Example `worker` that echoes input unchanged. |
+
+## Diagrams
+
+### Component Diagram
+![Component diagram](diagrams/component.png)
+
+### Detailed Request / Reply Sequence
+![Request sequence](diagrams/sequence_request.png)
+
+### Heartbeat and Failure Sequence
+![Heartbeat sequence](diagrams/sequence_heartbeat.png)
+
 
 Dependencies
 ------------
@@ -98,10 +150,3 @@ Enable systemd to start $USER services at boot (no $USER login required)
 loginctl enable-linger $USER
 ```
 
-## Simple Task Processing Flow
-
-![diagram](diagrams/simple_request.png)
-
-## Simple Worker Lifetime
-
-![diagram](diagrams/worker_lifetime.png)

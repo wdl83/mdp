@@ -1,0 +1,68 @@
+@startuml component
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam ArrowColor #444444
+skinparam ComponentBorderColor #666666
+
+title MDP Component Diagram
+
+package "apps" {
+    [broker\ndaemon] as BrokerApp
+    [client\nCLI tool] as ClientApp
+    [echo_worker\nexample] as EchoWorkerApp
+}
+
+package "broker" {
+    [Broker] as BrokerComp
+    [WorkerPool\n(per-service registry)] as WorkerPool
+    [BrokerTasks\n(in-flight task map)] as BrokerTasks
+    [ZMQBrokerContext\n(ROUTER socket)] as BrokerCtx
+}
+
+package "worker" {
+    [Worker] as WorkerComp
+    [WorkerTask\n(task thread)] as WorkerTask
+    [ZMQWorkerContext\n(DEALER + inproc pair)] as WorkerCtx
+}
+
+package "client" {
+    [Client] as ClientComp
+    [ZMQClientContext\n(DEALER socket)] as ClientCtx
+}
+
+[common\n(MDP protocol, heartbeat,\nidentities, utils)] as Common
+
+' apps wire to library components
+BrokerApp --> BrokerComp
+ClientApp --> ClientComp
+EchoWorkerApp --> WorkerComp
+
+' broker internals
+BrokerComp --> WorkerPool : manages
+BrokerComp --> BrokerTasks : tracks tasks
+BrokerComp --> BrokerCtx : ROUTER socket
+
+' worker internals
+WorkerComp --> WorkerTask : spawns thread
+WorkerComp --> WorkerCtx : DEALER + inproc
+
+' client internals
+ClientComp --> ClientCtx : DEALER socket
+
+' all components use common
+BrokerComp --> Common
+WorkerComp --> Common
+ClientComp --> Common
+
+' ZMQ transport
+BrokerCtx <---> WorkerCtx : ZMQ (ROUTER ↔ DEALER)\nMDP frames
+BrokerCtx <---> ClientCtx : ZMQ (ROUTER ↔ DEALER)\nMDP frames
+
+note bottom of WorkerTask
+  Runs in a separate thread.
+  Communicates with Worker main
+  loop via inproc DEALER pair.
+end note
+
+@enduml

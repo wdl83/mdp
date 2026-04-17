@@ -1,0 +1,71 @@
+@startuml sequence_request
+
+title MDP Detailed Request / Reply Sequence
+
+skinparam sequenceArrowThickness 1.5
+skinparam roundcorner 5
+skinparam backgroundColor #FEFEFE
+
+participant "Client\n(DEALER)" as C
+participant "Broker\n(ROUTER)" as B
+participant "WorkerPool\n& BrokerTasks" as WP
+participant "Worker main\n(DEALER)" as W
+participant "WorkerTask\n(thread)" as WT
+
+== Worker Registration (once per worker) ==
+
+W -> B : [Empty | "MDPW01" | 0x01 READY | serviceName]
+B -> WP : append(workerId, serviceName)\nstate = Idle
+
+== Client Request ==
+
+C -> B : [Empty | "MDPC01" | serviceName | ...payload]
+activate C #LightBlue
+
+B -> WP : acquire(serviceName) → idle worker (round-robin)
+WP --> B : workerIdentity
+B -> WP : state[worker] = Busy\nbrokerTasks[worker] = clientId
+
+B -> W : [Empty | "MDPW01" | 0x02 REQUEST | clientId | Empty | ...payload]
+activate W #LightGreen
+
+== Worker Processing ==
+
+W -> WT : forward via inproc masterSocket\n[clientId | Empty | ...payload]
+activate WT #LightYellow
+
+hnote over WT
+  transform(request)
+  (custom business logic)
+end note
+
+WT -> W : reply via inproc slaveSocket\n[Empty | "MDPW01" | 0x03 REPLY | clientId | Empty | ...reply]
+deactivate WT
+
+== Worker Reply ==
+
+W -> B : [Empty | "MDPW01" | 0x03 REPLY | clientId | Empty | ...reply]
+deactivate W
+
+B -> WP : state[worker] = Idle\nremove from brokerTasks
+
+B -> C : [Empty | "MDPC01" | serviceName | "success" | ...reply]
+deactivate C
+
+== Error: Service Not Found ==
+
+C -> B : [Empty | "MDPC01" | unknownService | ...payload]
+activate C #LightBlue
+B -> C : [Empty | "MDPC01" | unknownService | "failure" | "service unsupported"]
+deactivate C
+
+== Error: All Workers Busy ==
+
+C -> B : [Empty | "MDPC01" | serviceName | ...payload]
+activate C #LightBlue
+B -> WP : acquire(serviceName) → no idle worker
+WP --> B : nullptr
+B -> C : [Empty | "MDPC01" | serviceName | "failure" | "service busy"]
+deactivate C
+
+@enduml
